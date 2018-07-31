@@ -1,4 +1,4 @@
-#include "TestGroup.h"
+#include "Test.h"
 #include "Common.h"
 #include <iostream>
 #include <string>

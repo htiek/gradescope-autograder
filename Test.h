@@ -1,5 +1,5 @@
-#ifndef TestGroup_Included
-#define TestGroup_Included
+#ifndef Test_Included
+#define Test_Included
 
 #include <map>
 #include <string>
@@ -15,6 +15,7 @@ enum class Result {
   FAIL,           // Test failed due to an internal primitive being invoked.
   EXCEPTION,      // Test exited due to an exception we didn't trigger.
   CRASH,          // Test actually crashed!
+  TIMEOUT,        // Test failed to complete in time.
   INTERNAL_ERROR, // Oops... we blew it!
 };
 

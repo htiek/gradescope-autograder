@@ -1,4 +1,4 @@
-#include "TestGroup.h"
+#include "Test.h"
 #include "TestCase.h"
 #include "Common.h"
 #include <unistd.h>
@@ -8,6 +8,9 @@
 #include <sstream>
 #include <cstdint>
 #include <random>
+#include <future>
+#include <chrono>
+#include <cstring>
 using namespace std;
 
 /* * * * * Result Implementation * * * * */
@@ -17,6 +20,7 @@ string to_string(Result r) {
   case Result::FAIL:           return "fail";
   case Result::EXCEPTION:      return "exception";
   case Result::CRASH:          return "crash";
+  case Result::TIMEOUT:        return "timeout";
   case Result::INTERNAL_ERROR: return "internal error (!!)";
   default: emergencyAbort("Unknown result type.");
   }
@@ -52,29 +56,52 @@ namespace {
   /* Helper function that, given a function, evaluates that function and returns a
    * status code based on how it went.
    */
-  Result evaluateTestCase(function<void ()> testCase, const string& name) {
-    cout << "Running test \"" << name << "\"... " << endl;
-    try {
-      testCase();
-      cout << "  Pass." << endl;
-      return Result::PASS;
-    } catch (const TestSucceededException &) {
-      cout << "  Pass." << endl;
-      return Result::PASS;
-    } catch (const TestFailedException& e) {
-      cerr << "  Test failed!" << endl;
-      cerr << "  Error: " << e.what() << endl;
-      return Result::FAIL;
-    } catch (const InternalErrorException& e) {
-      cerr << "  INTERNAL TEST CASE FAILURE: " << e.what() << endl;
+  Result evaluateTestCase(function<void ()> testCase) {
+    /* Set up a future that runs the test and tells us how it went. This future is
+     * introduced so that timeouts don't cause us to hang indefinitely.
+     *
+     * One issue with std::future is that its destructor blocks until the calling thread
+     * has finished. That's a problem for us, because if this function returns before
+     * the test case has finished, we'll block until it's done, defeating the entire
+     * purpose of using futures.
+     *
+     * To get around this, we'll just leak a bunch of memory and move the future to a
+     * dynamically-allocated future object. We're going to terminate the program anyway
+     * once we return from this function, so realistically that's not actually an issue.
+     */
+    const auto kMaxWaitTime = chrono::seconds(5);
+    auto* result = new future<Result>(async(launch::async, [testCase] {
+      try {
+        testCase();
+        return Result::PASS;
+      } catch (const TestSucceededException &) {
+        return Result::PASS;
+      } catch (const TestFailedException& e) {
+        cerr << "  Test failed: " << e.what() << endl;
+        return Result::FAIL;
+      } catch (const InternalErrorException& e) {
+        cerr << "  INTERNAL TEST CASE FAILURE: " << e.what() << endl;
+        return Result::INTERNAL_ERROR;
+      } catch (const exception& e) {
+        cerr << "  Exception: " << e.what() << endl;
+        return Result::EXCEPTION;
+      } catch (...) {
+        cerr << "  Unknown exception generated." << endl;
+        return Result::EXCEPTION;
+      }
+    }));
+    
+    auto status = result->wait_for(kMaxWaitTime);
+    if (status == future_status::ready) {
+      return result->get();
+    } else if (status == future_status::timeout) {
+      return Result::TIMEOUT;
+    } else if (status == future_status::deferred) {
+      cerr << "  INTERNAL TEST DRIVER FAILURE: Future was deferred?" << endl;
       return Result::INTERNAL_ERROR;
-    } catch (const exception& e) {
-      cerr << "  Test generated exception!" << endl;
-      cerr << "    Exception: " << e.what() << endl;
-      return Result::EXCEPTION;
-    } catch (...) {
-      cerr << "  Test generated unknown exception!" << endl;
-      return Result::EXCEPTION;
+    } else {
+      cerr << "  INTERNAL TEST DRIVER FAILURE: Unknown status code?" << endl;
+      return Result::INTERNAL_ERROR;
     }
   }
   
@@ -86,9 +113,7 @@ namespace {
   }
 
   /* Helper function to run a test and report how it goes. */
-  // TODO: Set a time limit on how long you decide to wait before
-  // giving up and assuming the test has failed.
-  Result runTest(function<void ()> testCase, const string& name) {
+  Result runTest(function<void ()> testCase) { 
     /* Just to guard against someone trying to guess what status code to return,
      * we'll introduce a random one-byte XOR mask.
      */
@@ -102,7 +127,8 @@ namespace {
     
     /* Child needs to do the actual work. */
     if (pid == 0) {
-      exit(key ^ static_cast<int>(evaluateTestCase(testCase, name)));
+      /* Do a quick exit - we don't care about reclaiming resources from other threads. */
+      quick_exit(key ^ static_cast<int>(evaluateTestCase(testCase)));
     }
     
     /* Parent needs to wait for a result. */
@@ -114,7 +140,12 @@ namespace {
       if (result == Result::INTERNAL_ERROR) emergencyAbort("Test failed due to internal error.");
       
       return result;
+    } else if (WIFSIGNALED(status)) {
+      auto signal = WTERMSIG(status);
+      cout << "  Child process crashed with signal " << signal << " (" << strsignal(signal) << ")" << endl;
+      return Result::CRASH;
     } else {
+      cout << "  Child process crashed for an unknown reason?" << endl;
       return Result::CRASH;
     }
   }
@@ -122,7 +153,9 @@ namespace {
 
 TestResults TestCase::run() {
   /* Run the test and see how it went. */
-  auto result = runTest(testCase, name());
+  cout << "Running test: " << name() << endl;
+  auto result = runTest(testCase);
+  cout << "  Result: " << to_string(result) << endl;
   
   return {
     { { name(), result } },                               // We did however we did.

@@ -91,7 +91,7 @@
 /* * * * * * Everything below this point is hacky implementation. Here Be Dragons. * * * * * */
 /*********************************************************************************************/
 
-#include "TestGroup.h"
+#include "Test.h"
 #include <vector>
 #include <string>
 #include <memory>

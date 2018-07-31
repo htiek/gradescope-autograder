@@ -36,7 +36,10 @@ TEST_GROUP("All possible outcomes.") {
     throw 137;
   }
   
+  volatile int x = 0;
   ADD_TEST("I'm a slowpoke!") {
-    sleep(10);
+    while (true) {
+      x++;
+    }
   }
 }
