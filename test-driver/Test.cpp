@@ -1,6 +1,6 @@
 #include "Test.h"
 #include "TestCase.h"
-#include "Common.h"
+#include "TestCommon.h"
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -13,14 +13,18 @@
 #include <cstring>
 using namespace std;
 
+namespace {
+  const string kHierarchySeparator = "::";
+}
+
 /* * * * * Result Implementation * * * * */
 string to_string(Result r) {
   switch (r) {
-  case Result::PASS:           return "pass";
-  case Result::FAIL:           return "fail";
-  case Result::EXCEPTION:      return "exception";
-  case Result::CRASH:          return "crash";
-  case Result::TIMEOUT:        return "timeout";
+  case Result::PASS:           return "test passed";
+  case Result::FAIL:           return "test failed";
+  case Result::EXCEPTION:      return "test triggered exception";
+  case Result::CRASH:          return "test crashed";
+  case Result::TIMEOUT:        return "test timed out";
   case Result::INTERNAL_ERROR: return "internal error (!!)";
   default: emergencyAbort("Unknown result type.");
   }
@@ -159,6 +163,7 @@ TestResults TestCase::run() {
   
   return {
     { { name(), result } },                               // We did however we did.
+    name(),                                               // Use our own name.
     { result == Result::PASS? numPoints : 0, numPoints }, // Only award points for a success.
     false                                                 // Individual tests are considered private
   };
@@ -194,7 +199,7 @@ TestResults TestGroup::run() {
     
     /* Copy over all the individual test results. */
     for (auto oneTest: oneResult.individualResults) {
-      results.individualResults[name() + "/" + oneTest.first] = oneTest.second;
+      results.individualResults[name() + kHierarchySeparator + oneTest.first] = oneTest.second;
     }
     
     /* Update the score. */
@@ -207,9 +212,15 @@ TestResults TestGroup::run() {
   
   /* If we have a hard point cap, scale the points to fit. */
   if (numPoints != kDetermineAutomatically) {
-    results.score.earned   = results.score.earned * numPoints / results.score.possible;
-    results.score.possible = numPoints;
+    if (results.score.possible != 0) {
+      results.score.earned   = results.score.earned * numPoints / results.score.possible;
+      results.score.possible = numPoints;
+    } else {
+      results.score.earned = results.score.possible = 0;
+    }
   }
+  
+  results.name = name();
   
   return results;
 }

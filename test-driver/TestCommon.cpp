@@ -1,4 +1,4 @@
-#include "Common.h"
+#include "TestCommon.h"
 #include <cstdlib>
 #include <iostream>
 using namespace std;

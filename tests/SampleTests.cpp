@@ -5,6 +5,8 @@
 using namespace std;
 
 TEST_GROUP("All possible outcomes.") {
+  MAKE_TESTS_PUBLIC();
+
   ADD_TEST("Abort") {
     abort();
   }

@@ -38,6 +38,10 @@ std::ostream& operator<< (std::ostream& out, const Score& score);
 struct TestResults {
   /* Map from individual test cases to their results. */
   std::map<std::string, Result> individualResults;
+  
+  /* Name of this particular set of test results. */
+  std::string name;
+  
   Score score;
   bool isPublic;
 };

@@ -1,7 +1,6 @@
 #include "TestCase.h"
+#include "Simple.h"
 #include <iostream>
-#include <csignal>
-#include <unistd.h>
 using namespace std;
 
 TEST_GROUP("Second batch of tests") {
@@ -12,4 +11,8 @@ TEST_GROUP("Second batch of tests") {
   ADD_TEST("Whimsy!") {
     cout << "Whimsy!" << endl;
   }
+}
+
+ADD_TEST("Solo Test") {
+  expect(doSomething());
 }
