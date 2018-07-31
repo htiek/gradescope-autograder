@@ -151,15 +151,6 @@ public:
 /* The default parent namespace is the root. */
 namespace Parent = Root;
 
-/* Macro: ENABLE_TESTS
- *
- * What it actually does: This defines an integer variable that will
- * then be referenced externally by the main driver program, causing all
- * static initializers to fire.
- */
-#undef  ENABLE_TESTS
-#define ENABLE_TESTS() int GROUP = 137
-
 /* Macro: TEST_GROUP(name) {
  *    ...
  * }

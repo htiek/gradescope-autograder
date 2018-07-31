@@ -4,9 +4,6 @@
 #include <string>
 using namespace std;
 
-/* Pull from SampleTests */
-extern int G0;
-
 int main() try {
   for (auto test: allTests()) {
     auto results = test->run();
