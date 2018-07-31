@@ -1,0 +1,22 @@
+This is a general autograder framework for testing C++ assignments on GradeScope.
+
+Here's what you need to do to configure everything:
+
+1. SPECIFY A FILE MANIFEST. Edit the file MANIFEST to contain a list of all the files you expect
+   students to submit. Those files will be extracted from the submission/ directory, and the
+   autograder will report an error if any of them can't be found.
+   
+   Recommendation: Only include files in MANIFEST that you expect students to actually edit. You
+   can leave a clean copy of the starter files in the build directory.
+
+2. SET UP THE BUILD DIRECTORY. You should include in the build/ directory enough files to make it
+   possible to build all of the object files for the student code. You don't need to build a
+   final executable if you don't want to - we'll be doing that when running tests.
+   
+   There's a default Makefile in the build directory that you're welcome to use. It just compiles
+   all the .cpp files in the directory to object files.
+   
+3. SET UP THE TESTS DIRECTORY. Create all the files you'd like to use to run tests in the tests/
+   directory. You should define tests by using the TEST_GROUP and ADD_TEST commands from TestCase.h.
+   The tests in this directory will be compiled and linked against all the object files from your
+   build directory.

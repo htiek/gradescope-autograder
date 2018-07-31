@@ -1,0 +1,10 @@
+# Edit this file to include a list of all the files you expect the student
+# to submit. The autograder will then look for all these files in the
+# student's submission.
+#
+# All blank lines and lines starting with a hash mark are ignored.
+
+Simple.h
+Simple.cpp
+
+

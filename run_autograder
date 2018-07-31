@@ -1,0 +1,8 @@
+#!/bin/bash
+
+tools/copy-submission.sh MANIFEST build-directory &&  # Copy student submissions
+tools/build.sh build-directory                    &&  # Build student submission
+cp tests/* build-directory/                       &&  # Copy over test cases
+cp test-driver/* build-directory/                 &&  # Copy over test driver
+tools/build.sh build-directory -f Makefile.tests  &&  # Build the testing harness
+build-directory/run-tests results/results.json        # Run tests!

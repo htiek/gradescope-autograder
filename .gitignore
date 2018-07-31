@@ -31,3 +31,10 @@
 *.out
 *.app
 run-tests
+
+# Contents of transient directories
+submission/*
+results/*
+build-directory/*.cpp
+build-directory/*.h
+build-directory/*.tests
