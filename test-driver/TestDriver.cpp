@@ -72,7 +72,7 @@ namespace {
       }
       
       for (size_t i = 0; i < testFails.size(); i++) {
-        builder << "  " << testFails[i] << "\00\n";
+        builder << "  " << testFails[i] << "\\n";
       }
     }
     
