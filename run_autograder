@@ -1,8 +1,9 @@
 #!/bin/bash
 
-tools/copy-submission.sh MANIFEST build-directory &&  # Copy student submissions
-tools/build.sh build-directory                    &&  # Build student submission
-cp tests/* build-directory/                       &&  # Copy over test cases
-cp test-driver/* build-directory/                 &&  # Copy over test driver
-tools/build.sh build-directory -f Makefile.tests  &&  # Build the testing harness
-build-directory/run-tests results/results.json        # Run tests!
+cp -r build-directory assembly                    &&  # Create a spot to build everything
+tools/copy-submission.sh MANIFEST assembly        &&  # Copy student submissions
+tools/build.sh assembly                           &&  # Build student submission
+cp tests/* assembly/                              &&  # Copy over test cases
+cp test-driver/* assembly/                        &&  # Copy over test driver
+tools/build.sh assembly -f Makefile.tests         &&  # Build the testing harness
+assembly/run-tests results/results.json               # Run tests!

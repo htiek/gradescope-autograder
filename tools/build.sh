@@ -15,14 +15,10 @@ then
     exit 1
 fi
 
-pushd "$1"
-shift
-
-if make $@; then
+if (cd "$1"; shift; make $@); then
   exit 0
 else
   # TODO: Better error reporting?
-  popd # Get back to the original directory we were in
   tools/error.sh "The code you submitted did not compile."
   exit 1
 fi

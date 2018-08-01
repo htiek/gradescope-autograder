@@ -6,17 +6,39 @@ Here's what you need to do to configure everything:
    students to submit. Those files will be extracted from the submission/ directory, and the
    autograder will report an error if any of them can't be found.
    
+   The autograder is designed to work in cases where students might submit the wrong directory
+   or be up or down the directory hierarchy a little bit. As a result, you just need to specify
+   the name of the file, not the path to it. The autograder will recursively traverse the
+   submissions directory to try to find everything.
+   
    Recommendation: Only include files in MANIFEST that you expect students to actually edit. You
    can leave a clean copy of the starter files in the build directory.
 
-2. SET UP THE BUILD DIRECTORY. You should include in the build/ directory enough files to make it
-   possible to build all of the object files for the student code. You don't need to build a
-   final executable if you don't want to - we'll be doing that when running tests.
+2. SET UP THE BUILD DIRECTORY. You should include in build-directory/ enough files to make it
+   possible to build all of the object files for the student code.
    
    There's a default Makefile in the build directory that you're welcome to use. It just compiles
    all the .cpp files in the directory to object files.
+   
+   The autograder will build an executable that runs all of the tests you've provided by linking
+   all the .o files that your build directory against the test driver. As a result, you should
+   not build any files with a main() function in them, since that will result in a linker error
+   when trying to assemble the tests.
+   
+   Additionally, the test driver will try linking against all the .o files in build-directory/,
+   but not .o files in any subdirectories. If that's a problem, let me know and I can adapt the
+   system.
    
 3. SET UP THE TESTS DIRECTORY. Create all the files you'd like to use to run tests in the tests/
    directory. You should define tests by using the TEST_GROUP and ADD_TEST commands from TestCase.h.
    The tests in this directory will be compiled and linked against all the object files from your
    build directory.
+   
+4. TEST YOUR SETUP! To confirm that your setup works, create a directory called submission/ and load
+   it with whatever test submission you'd like. Then, invoke ./run_autograder to run the end-to-end
+   pipeline and do whatever debugging or tuning you'd like.
+
+5. RUN THE FINALIZATION SCRIPT. The script ./run-this-before-uploading.sh will clean everything up
+   so that everything is ready to go before submitting. It will also report back to you how many
+   total points the assignment is out of so that you can enter that number into GradeScope when it
+   asks for a point total.
