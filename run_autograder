@@ -1,9 +1,4 @@
 #!/bin/bash
 
-cp -r build-directory assembly                    &&  # Create a spot to build everything
-tools/copy-submission.sh MANIFEST assembly        &&  # Copy student submissions
-tools/build.sh assembly                           &&  # Build student submission
-cp tests/* assembly/                              &&  # Copy over test cases
-cp test-driver/* assembly/                        &&  # Copy over test driver
-tools/build.sh assembly -f Makefile.tests         &&  # Build the testing harness
-assembly/run-tests results/results.json               # Run tests!
+tools/assemble.sh assembly                  && # Build everything
+assembly/run-tests results/results.json        # Run the tests!

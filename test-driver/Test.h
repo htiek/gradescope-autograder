@@ -54,6 +54,9 @@ public:
   /* Runs the tests, returning a collection of test results. */
   virtual TestResults run() = 0;
   
+  /* Returns how many points this test is worth. */
+  virtual Points pointsPossible() const = 0;
+  
   /* Returns the name of this test. */
   std::string name() const;
   
@@ -73,6 +76,9 @@ public:
 
   /* Runs the individual test, returning how it went. */
   TestResults run() override;
+  
+  /* Returns the underlying number of points. */
+  Points pointsPossible() const override;
   
 private:
   std::function<void ()> testCase;
@@ -98,6 +104,9 @@ public:
   
   /* Changes the visibility of this test case. */
   void setPublic(bool isPublic = true);
+  
+  /* Returns the underlying number of points, or calculates recursively as needed. */
+  Points pointsPossible() const override;
   
 private:
   std::map<std::string, std::shared_ptr<Test>> tests;

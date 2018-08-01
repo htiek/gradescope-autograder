@@ -169,6 +169,10 @@ TestResults TestCase::run() {
   };
 }
 
+Points TestCase::pointsPossible() const {
+  return numPoints;
+}
+
 /* * * * * TestGroup Implementation * * * * */
 
 TestGroup::TestGroup(const string& name, Points numPoints)
@@ -227,4 +231,16 @@ TestResults TestGroup::run() {
 
 void TestGroup::setPublic(bool isPublic) {
   amIPublic = isPublic;
+}
+
+Points TestGroup::pointsPossible() const {
+  /* If we have a fixed number of points, return that. */
+  if (numPoints != kDetermineAutomatically) return numPoints;
+  
+  /* Otherwise, sum our children. */
+  Points result = 0;
+  for (const auto& test: tests) {
+    result += test.second->pointsPossible();
+  }
+  return result;
 }

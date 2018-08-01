@@ -5,6 +5,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <iomanip>
 using namespace std;
 
 namespace {
@@ -18,14 +19,15 @@ namespace {
   }
   
   /* Totals the number of points earned through a set of test results. */
-  Points totalPointsFrom(const vector<TestResults>& results) {
-    Points earned = 0;
+  Score scoreOf(const vector<TestResults>& results) {
+    Score score;
     
     for (const auto& result: results) {
-      earned += result.score.earned;
+      score.earned   += result.score.earned;
+      score.possible += result.score.possible;
     }
     
-    return earned;
+    return score;
   }
   
   /* Returns a count of how many tests in the given test passed. */
@@ -91,10 +93,10 @@ namespace {
   
   /* Outputs a JSON report containing test results. */
   void reportResults(const vector<TestResults>& results, ostream& out) {
-    Points totalEarned = totalPointsFrom(results);
+    Score totalEarned = scoreOf(results);
     
     out << "{" << endl;
-    out << "  \"score\": " << totalEarned << "," << endl;
+    out << "  \"score\": " << totalEarned.earned << "," << endl;
     out << "  \"tests\": [" << endl;
     
     for (size_t i = 0; i < results.size(); i++) {
@@ -105,14 +107,52 @@ namespace {
     out << "  ]" << endl;
     out << "}" << endl;
   }
+  
+  /* Returns the contents of the specified file as a string. */
+  string contentsOf(const string& filename) {
+    ifstream input(filename);
+    if (!input) emergencyAbort("Cannot open file " + filename + " for reading.");
+    
+    ostringstream result;
+    result << input.rdbuf();
+    return result.str();
+  }
+  
+  /* Program mode: Count points */
+  void countPossiblePoints() {
+    Points total = 0;
+    for (auto test: allTests()) {
+      total += test->pointsPossible();
+    }
+    cout << total;
+  }
+  
+  /* Program mode: Run all tests! */
+  void runTests(const string& outfile) {
+    ofstream output(outfile);
+    if (!output) emergencyAbort("Could not open file " + outfile + " for writing.");
+    
+    reportResults(runAllTests(), output);
+    
+    /* For debugging purposes, dump the generated JSON. */
+    output.close();
+    cout << "Generated JSON file " << outfile << " with these contents: " << endl;
+    cout << contentsOf(outfile) << endl;
+  }
 }
 
 int main(int argc, const char* argv[]) try {
   if (argc != 2) emergencyAbort("argc != 2; instead got " + to_string(argc));
-  ofstream output(argv[1]);
-  if (!output) emergencyAbort("Could not open file " + string(argv[1]) + " for writing.");
+  string argument = argv[1];
   
-  reportResults(runAllTests(), output);
+  /* See what to do based on what we were provided as our argument. */
+  if (argument == "--count-points") {
+    countPossiblePoints();
+  } else if (!argument.empty() && argument[0] == '-') {
+    emergencyAbort("Unknown command-line switch: " + argument);
+  } else {
+    runTests(argv[1]);
+  }
 } catch (const exception& e) {
   emergencyAbort(string("Unhandled exception: ") + e.what());
 } catch (...) {
