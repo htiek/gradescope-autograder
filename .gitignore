@@ -34,9 +34,6 @@ run-tests
 Autograder.zip
 
 # Contents of transient directories
-submission/*
-results/*
-build-directory/*.cpp
-build-directory/*.h
-build-directory/*.tests
+submission/
+results/
 assembly/
