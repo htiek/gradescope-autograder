@@ -3,7 +3,7 @@ using namespace std;
 
 /* * * * * Implementation of unit testing primitives. * * * * */
 namespace {
-  void hardFailTest(const string& message, size_t line, const char* filename) {
+  [[ noreturn ]] void hardFailTest(const string& message, size_t line, const char* filename) {
     throw TestFailedException(message, line, filename);
   }
 }

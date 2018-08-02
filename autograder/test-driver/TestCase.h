@@ -118,15 +118,15 @@ private:
 /* Implementation of testing primitive macros. */
 #undef passTest
 #define passTest() doPassTest()
-void doPassTest();
+[[ noreturn ]] void doPassTest();
 
 #undef failTest
 #define failTest(reason) doFailTest(reason, __LINE__, __FILE__)
-void doFailTest(const std::string& reason, std::size_t line, const char* filename);
+[[ noreturn ]] void doFailTest(const std::string& reason, std::size_t line, const char* filename);
 
 #undef internalError
 #define internalError(reason) doInternalError(reason, __LINE__, __FILE__);
-void doInternalError(const std::string& reason, std::size_t line, const char* filename);
+[[ noreturn ]] void doInternalError(const std::string& reason, std::size_t line, const char* filename);
 
 #undef expect
 #define expect(condition) doExpect(condition, "expect(" #condition "): condition was false.", __LINE__, __FILE__)
