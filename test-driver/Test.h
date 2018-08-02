@@ -1,6 +1,7 @@
 #ifndef Test_Included
 #define Test_Included
 
+#include "TestResult.h"
 #include <map>
 #include <string>
 #include <memory>
@@ -9,50 +10,13 @@
 #include <limits>
 #include <ostream>
 
-/* Type representing a test outcome. */
-enum class Result {
-  PASS,           // Test passed.
-  FAIL,           // Test failed due to an internal primitive being invoked.
-  EXCEPTION,      // Test exited due to an exception we didn't trigger.
-  CRASH,          // Test actually crashed!
-  TIMEOUT,        // Test failed to complete in time.
-  INTERNAL_ERROR, // Oops... we blew it!
-};
-
-std::string to_string(Result r);
-
-/* Type representing a number of points. */
-using Points = std::size_t;
-
-/* Constant representing "figure out how many points this is automatically. */
-static constexpr Points kDetermineAutomatically = std::numeric_limits<Points>::max();
-
-/* Type representing a score. */
-struct Score {
-  Points earned    = Points(0);
-  Points possible  = Points(0);
-};
-std::ostream& operator<< (std::ostream& out, const Score& score);
-
-/* Type representing the results of a test. */
-struct TestResults {
-  /* Map from individual test cases to their results. */
-  std::map<std::string, Result> individualResults;
-  
-  /* Name of this particular set of test results. */
-  std::string name;
-  
-  Score score;
-  bool isPublic;
-};
-
 /* Type representing some sort of test that can be run. */
-class Test {
+class Test: public std::enable_shared_from_this<Test> {
 public:
   virtual ~Test() = default;
   
   /* Runs the tests, returning a collection of test results. */
-  virtual TestResults run() = 0;
+  virtual std::shared_ptr<TestResult> run() = 0;
   
   /* Returns how many points this test is worth. */
   virtual Points pointsPossible() const = 0;
@@ -75,7 +39,7 @@ public:
            Points numPoints = 1);
 
   /* Runs the individual test, returning how it went. */
-  TestResults run() override;
+  std::shared_ptr<TestResult> run() override;
   
   /* Returns the underlying number of points. */
   Points pointsPossible() const override;
@@ -97,7 +61,7 @@ public:
   std::shared_ptr<Test> testNamed(const std::string& name) const;
   
   /* Runs all the tests in the group. */
-  TestResults run() override;
+  std::shared_ptr<TestResult> run() override;
   
   /* Returns whether this group of tests is public. */
   bool isPublic() const;

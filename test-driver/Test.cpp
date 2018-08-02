@@ -13,30 +13,6 @@
 #include <cstring>
 using namespace std;
 
-namespace {
-  const string kHierarchySeparator = "::";
-}
-
-/* * * * * Result Implementation * * * * */
-string to_string(Result r) {
-  switch (r) {
-  case Result::PASS:           return "test passed";
-  case Result::FAIL:           return "test failed";
-  case Result::EXCEPTION:      return "test triggered exception";
-  case Result::CRASH:          return "test crashed";
-  case Result::TIMEOUT:        return "test timed out";
-  case Result::INTERNAL_ERROR: return "internal error (!!)";
-  default: emergencyAbort("Unknown result type.");
-  }
-}
-
-/* * * * * Score Implementation * * * * */
-ostream& operator<< (ostream& out, const Score& score) {
-  ostringstream result;
-  result << score.earned << " / " << score.possible;
-  return out << result.str();
-}
-
 /* * * * * Test Implementation * * * * */
 Test::Test(const string& name) : theName(name) {
 
@@ -155,18 +131,13 @@ namespace {
   }
 }
 
-TestResults TestCase::run() {
+shared_ptr<TestResult> TestCase::run() {
   /* Run the test and see how it went. */
   cout << "Running test: " << name() << endl;
   auto result = runTest(testCase);
   cout << "  Result: " << to_string(result) << endl;
   
-  return {
-    { { name(), result } },                               // We did however we did.
-    name(),                                               // Use our own name.
-    { result == Result::PASS? numPoints : 0, numPoints }, // Only award points for a success.
-    false                                                 // Individual tests are considered private
-  };
+  return make_shared<SingleTestResult>(result, pointsPossible(), name());
 }
 
 Points TestCase::pointsPossible() const {
@@ -194,39 +165,36 @@ shared_ptr<Test> TestGroup::testNamed(const string& name) const {
   return tests.at(name);
 }
 
-TestResults TestGroup::run() {
-  TestResults results;
+shared_ptr<TestResult> TestGroup::run() {
+  set<shared_ptr<TestResult>> children;
+  Score score;
   
   /* Run each test, incorporating the information we find. */
   for (auto test: tests) {
     auto oneResult = test.second->run();
     
-    /* Copy over all the individual test results. */
-    for (auto oneTest: oneResult.individualResults) {
-      results.individualResults[name() + kHierarchySeparator + oneTest.first] = oneTest.second;
-    }
+    children.insert(oneResult);
     
     /* Update the score. */
-    results.score.earned   += oneResult.score.earned;
-    results.score.possible += oneResult.score.possible;
+    score.earned   += oneResult->score().earned;
+    score.possible += oneResult->score().possible;
   }
-  
-  /* Set whether this test is public or private based on whether we're public or private. */
-  results.isPublic = isPublic();
   
   /* If we have a hard point cap, scale the points to fit. */
   if (numPoints != kDetermineAutomatically) {
-    if (results.score.possible != 0) {
-      results.score.earned   = results.score.earned * numPoints / results.score.possible;
-      results.score.possible = numPoints;
+    if (score.possible != 0) {
+      score.earned   = score.earned * numPoints / score.possible;
+      score.possible = numPoints;
     } else {
-      results.score.earned = results.score.possible = 0;
+      score.earned = score.possible = 0;
     }
   }
   
-  results.name = name();
-  
-  return results;
+  if (isPublic()) {
+    return make_shared<PublicTestGroupResult>(score, name(), children);
+  } else {
+    return make_shared<PrivateTestGroupResult>(score, name(), children);
+  }
 }
 
 void TestGroup::setPublic(bool isPublic) {
