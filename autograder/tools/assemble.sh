@@ -18,6 +18,6 @@ rm -rf "$1"                                       &&  # Ensure there's no assemb
 cp -r build-directory "$1"                        &&  # Create a spot to build everything
 tools/copy-submission.sh MANIFEST "$1"            &&  # Copy student submissions
 tools/build.sh "$1"                               &&  # Build student submission
-cp tests/* "$1"/                                  &&  # Copy over test cases
-cp test-driver/* "$1"/                            &&  # Copy over test driver
+cp -r tests/* "$1"/                               &&  # Copy over test cases
+cp -r test-driver/* "$1"/                         &&  # Copy over test driver
 tools/build.sh "$1" -f Makefile.tests                 # Build the testing harness

@@ -1,4 +1,4 @@
 #!/bin/bash
 
-tools/assemble.sh assembly                  && # Build everything
-assembly/run-tests results/results.json        # Run the tests!
+tools/assemble.sh assembly                           && # Build everything
+(cd assembly && ./run-tests ../results/results.json)    # Run the tests!

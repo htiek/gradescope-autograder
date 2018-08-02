@@ -20,7 +20,7 @@ echo
 echo "End-to-end dry run..."
 echo
 
-tools/assemble.sh assembly && TOTAL_POINTS=$(assembly/run-tests --count-points) || exit 1
+tools/assemble.sh assembly && TOTAL_POINTS=$(cd assembly && ./run-tests --count-points) || exit 1
 
 echo
 echo "Assembling ZIP archive..."
