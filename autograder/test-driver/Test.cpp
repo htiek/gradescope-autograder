@@ -11,6 +11,8 @@
 #include <future>
 #include <chrono>
 #include <cstring>
+#include <atomic>
+#include <thread>
 using namespace std;
 
 /* * * * * Test Implementation * * * * */
@@ -37,52 +39,110 @@ namespace {
    * status code based on how it went.
    */
   Result evaluateTestCase(function<void ()> testCase) {
-    /* Set up a future that runs the test and tells us how it went. This future is
-     * introduced so that timeouts don't cause us to hang indefinitely.
-     *
-     * One issue with std::future is that its destructor blocks until the calling thread
-     * has finished. That's a problem for us, because if this function returns before
-     * the test case has finished, we'll block until it's done, defeating the entire
-     * purpose of using futures.
-     *
-     * To get around this, we'll just leak a bunch of memory and move the future to a
-     * dynamically-allocated future object. We're going to terminate the program anyway
-     * once we return from this function, so realistically that's not actually an issue.
-     */
-    const auto kMaxWaitTime = chrono::seconds(5);
-    auto* result = new future<Result>(async(launch::async, [testCase] {
-      try {
-        testCase();
-        return Result::PASS;
-      } catch (const TestSucceededException &) {
-        return Result::PASS;
-      } catch (const TestFailedException& e) {
-        cerr << "  Test failed: " << e.what() << endl;
-        return Result::FAIL;
-      } catch (const InternalErrorException& e) {
-        cerr << "  INTERNAL TEST CASE FAILURE: " << e.what() << endl;
-        return Result::INTERNAL_ERROR;
-      } catch (const exception& e) {
-        cerr << "  Exception: " << e.what() << endl;
-        return Result::EXCEPTION;
-      } catch (...) {
-        cerr << "  Unknown exception generated." << endl;
-        return Result::EXCEPTION;
-      }
-    }));
-    
-    auto status = result->wait_for(kMaxWaitTime);
-    if (status == future_status::ready) {
-      return result->get();
-    } else if (status == future_status::timeout) {
-      return Result::TIMEOUT;
-    } else if (status == future_status::deferred) {
-      cerr << "  INTERNAL TEST DRIVER FAILURE: Future was deferred?" << endl;
+    try {
+      testCase();
+      return Result::PASS;
+    } catch (const TestSucceededException &) {
+      return Result::PASS;
+    } catch (const TestFailedException& e) {
+      cerr << "  Test failed: " << e.what() << endl;
+      return Result::FAIL;
+    } catch (const InternalErrorException& e) {
+      cerr << "  INTERNAL TEST CASE FAILURE: " << e.what() << endl;
       return Result::INTERNAL_ERROR;
-    } else {
-      cerr << "  INTERNAL TEST DRIVER FAILURE: Unknown status code?" << endl;
-      return Result::INTERNAL_ERROR;
+    } catch (const exception& e) {
+      cerr << "  Exception: " << e.what() << endl;
+      return Result::EXCEPTION;
+    } catch (...) {
+      cerr << "  Unknown exception generated." << endl;
+      return Result::EXCEPTION;
     }
+  }
+ 
+  /* Child process handler. [[ TODO: This! ]] */
+  [[ noreturn ]] void childProcessHandler(function<void ()> testCase, uint8_t xorKey, int pipeFD) {
+    /* Evaluate the test case and see what we get back. */
+    uint8_t result = static_cast<uint8_t>(evaluateTestCase(testCase)) ^ xorKey;
+    
+    /* Write this back through the pipe. */
+    int status = write(pipeFD, &result, sizeof(result));
+    if (status == -1) emergencyAbort("Failed to write data into pipe?");
+    if (status ==  0) emergencyAbort("Tried to write a byte, but failed?");
+    
+    /* Otherwise, we're all set! */  
+    exit(0);
+  }
+  
+  /* Parent handler for test case. We will wait for a specified time period for the
+   * child to succeed before killing it and considering things a failure.
+   */
+  const long kChildWaitTime = 5;
+  Result parentProcessHandler(pid_t childPID, uint8_t xorKey, int pipeFD) {
+    /* Use select() to wait until data arrives or some amount of time passes. */
+    fd_set set;
+    FD_ZERO(&set);
+    FD_SET(pipeFD, &set);
+    
+    struct timeval timeout;
+    timeout.tv_sec = kChildWaitTime;
+    timeout.tv_usec = 0;
+    
+    /* We aren't expecting any signals, and so we won't run select() in a loop. Any signal
+     * indicates that something weird has happened.
+     */
+    int selectStatus = select(pipeFD + 1, &set, nullptr, nullptr, &timeout);
+    if (selectStatus == -1) emergencyAbort("select() failed.");
+    
+    /* If nothing is ready to read, we assume the process hasn't yet terminated and that
+     * we need to shut it down.
+     */
+    Result result;
+    if (selectStatus == 0) {
+      kill(childPID, SIGKILL);
+      result = Result::TIMEOUT;
+    }
+    /* Otherwise, the child has already terminated. See what we got back. */
+    else {
+      uint8_t data;
+      int readStatus = read(pipeFD, &data, sizeof(data));
+      if (readStatus == -1) {
+        emergencyAbort("read() failed.");
+      } 
+      /* We may get back 0 bytes, meaning that no data was sent back. We interpret this to
+       * be a crash, since normal program termination would have sent something.
+       */
+      else if (readStatus == 0) {
+        result = Result::CRASH;
+      }      
+      /* Or, we did get a byte back. Convert it back to a result. */
+      else {
+        result = static_cast<Result>(data ^ xorKey);
+        
+        /* If there was an internal test case error, we need to panic. */
+        if (result == Result::INTERNAL_ERROR) emergencyAbort("Internal error occurred in test.");
+      }
+    }
+    
+    /* Wait for the child to exit. */
+    int childStatus;
+    if (waitpid(childPID, &childStatus, 0) == -1) emergencyAbort("Failed to wait for child.");
+     
+    /* If we ended the test for an abnormal reason, report some diagnostic information. */
+    if (result != Result::PASS && result != Result::FAIL && result != Result::EXCEPTION) {
+      if (WIFEXITED(childStatus)) {
+        cout << "  Child process exited abnormally with status code " << WEXITSTATUS(childStatus) << endl;
+      } else if (WIFSIGNALED(childStatus)) {
+        cout << "  Child process terminated by signal " << WTERMSIG(childStatus)
+             << " (" << strsignal(WTERMSIG(childStatus)) << ")" << endl;
+      } else {
+        emergencyAbort("Child terminated for unknown reason.");
+      }
+    }
+    
+    /* Close our end of the pipe. */
+    close(pipeFD);
+    
+    return result;
   }
   
   /* Returns a random byte. */
@@ -98,7 +158,11 @@ namespace {
      * we'll introduce a random one-byte XOR mask.
      */
     uint8_t key = randomByte();
-  
+    
+    /* Create a pipe. The child process will write the result back to the parent. */
+    int pipes[2];
+    if (pipe(pipes) == -1) emergencyAbort("Couldn't create child/parent pipe.");
+    
     /* Spawn a subprocess to evaluate the function in isolation. This shields us in
      * case the test case leads to a crash.
      */
@@ -107,26 +171,11 @@ namespace {
     
     /* Child needs to do the actual work. */
     if (pid == 0) {
-      /* Do a quick exit - we don't care about reclaiming resources from other threads. */
-      quick_exit(key ^ static_cast<int>(evaluateTestCase(testCase)));
-    }
-    
-    /* Parent needs to wait for a result. */
-    int status;
-    if (waitpid(pid, &status, 0) == -1) emergencyAbort("Failed to wait for child.");
-    
-    if (WIFEXITED(status)) {
-      auto result = static_cast<Result>(key ^ WEXITSTATUS(status));
-      if (result == Result::INTERNAL_ERROR) emergencyAbort("Test failed due to internal error.");
-      
-      return result;
-    } else if (WIFSIGNALED(status)) {
-      auto signal = WTERMSIG(status);
-      cout << "  Child process crashed with signal " << signal << " (" << strsignal(signal) << ")" << endl;
-      return Result::CRASH;
+      close(pipes[0]);
+      childProcessHandler(testCase, key, pipes[1]); // Never returns
     } else {
-      cout << "  Child process crashed for an unknown reason?" << endl;
-      return Result::CRASH;
+      close(pipes[1]);
+      return parentProcessHandler(pid, key, pipes[0]);
     }
   }
 }
