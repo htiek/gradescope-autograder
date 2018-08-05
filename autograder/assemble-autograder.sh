@@ -5,8 +5,15 @@
 # By default, we will try updating the autograder to use the most recent version. You can
 # override this by passing in --no-update as an argument to the script.
 if [ "$1" != "--no-update" ]; then
-    echo "We're going to start off by updating the autograder framework to use the"
-    echo "most recent version available on GitHub."
+  echo "We're going to start off by updating the autograder framework to use the"
+  echo "most recent version available on GitHub."
+  echo
+  echo "To proceed, type YES. To skip this step, just hit enter."
+  
+  read CONFIRM
+  
+  if [ "$CONFIRM" == "YES" ] || [ "$CONFIRM" == "yes" ] || [ "$CONFIRM" == "Y" ] || [ "$CONFIRM" == "y" ]; then
+    echo "Updating..."
     echo
     
     # Stash the zip and extract it in a temporary place.
@@ -16,8 +23,8 @@ if [ "$1" != "--no-update" ]; then
     # Base path to append to the extracted directory to get where we want.
     FILE_PATH="gradescope-autograder-master/autograder"
     
-    curl -sS "https://codeload.github.com/htiek/gradescope-autograder/zip/master" > $UPDATE_ARCHIVE && # Download
-    unzip -q $UPDATE_ARCHIVE -d $UPDATE_DIRECTORY || exit 1                                            # Extract
+    curl "https://codeload.github.com/htiek/gradescope-autograder/zip/master" > $UPDATE_ARCHIVE && # Download
+    unzip $UPDATE_ARCHIVE -d $UPDATE_DIRECTORY || exit 1                                           # Extract
     
     # List of files to copy over
     UPDATE_FILES="test-driver tools Instructions run_autograder setup.sh assemble-autograder.sh"
@@ -40,6 +47,10 @@ if [ "$1" != "--no-update" ]; then
     # recursive loop!
     ./assemble-autograder.sh --no-update || exit 1
     exit 0
+  else
+    echo "Skipping update."
+    echo
+  fi
 fi
 
 echo "We're going to do an end-to-end dry run of the autograder to make sure"
