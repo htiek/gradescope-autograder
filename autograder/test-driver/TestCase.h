@@ -167,28 +167,28 @@ namespace Parent = Root;
 #define TEST_GROUP_MACRO(_1, _2, NAME, ...) NAME
 #define TEST_GROUP(...) TEST_GROUP_MACRO(__VA_ARGS__, MAKE_TEST, MAKE_TEST_DEFAULT, X)(__VA_ARGS__)
 
-#define MAKE_TEST(groupName, numPoints)                                       \
+#define MAKE_TEST(groupName, numPoints)                                             \
     MAKE_TEST_GROUP(groupName, numPoints, GROUP, __LINE__)
     
-#define MAKE_TEST_DEFAULT(groupName)                                          \
+#define MAKE_TEST_DEFAULT(groupName)                                                \
     MAKE_TEST_GROUP(groupName, kDetermineAutomatically, GROUP, __LINE__)
 
 /* Expands out the definition of the test group. */
-#define MAKE_TEST_GROUP(groupName, numPoints, group, line)                    \
-    namespace JOIN3(group, _TestGroup_, line) {                               \
-      auto installTest(std::vector<std::string> path,                         \
-                              std::shared_ptr<Test> test) {                   \
-        path.push_back(groupName);                                            \
-        return Parent::installTest(path, test);                               \
-      }                                                                       \
-                                                                              \
-      auto _thisGroup =                                                       \
-        Parent::installTest({}, make_shared<TestGroup>(groupName, numPoints));\
-                                                                              \
-      namespace Contents {                                                    \
-        namespace Parent = JOIN3(group, _TestGroup_, line);                   \
-      }                                                                       \
-    }                                                                         \
+#define MAKE_TEST_GROUP(groupName, numPoints, group, line)                          \
+    namespace JOIN3(group, _TestGroup_, line) {                                     \
+      auto installTest(std::vector<std::string> path,                               \
+                              std::shared_ptr<Test> test) {                         \
+        path.push_back(groupName);                                                  \
+        return Parent::installTest(path, test);                                     \
+      }                                                                             \
+                                                                                    \
+      auto _thisGroup =                                                             \
+        Parent::installTest({}, std::make_shared<TestGroup>(groupName, numPoints)); \
+                                                                                    \
+      namespace Contents {                                                          \
+        namespace Parent = JOIN3(group, _TestGroup_, line);                         \
+      }                                                                             \
+    }                                                                               \
     namespace JOIN3(group, _TestGroup_, line)::Contents
 
 /* Macro: ADD_TEST(name) {
@@ -213,7 +213,7 @@ namespace Parent = Root;
     void JOIN3(group, _TestFunction_, line)();                                \
     auto JOIN3(_installer, _dummy_, line) =                                   \
       Parent::installTest({},                                                 \
-                          make_shared<TestCase>(name,                         \
+                          std::make_shared<TestCase>(name,                    \
                           JOIN3(group, _TestFunction_, line), points));       \
     void JOIN3(group, _TestFunction_, line)()
 
@@ -230,7 +230,7 @@ namespace Parent = Root;
 
 #define DO_MAKE_TESTS_PUBLIC(line)                                            \
     Invoker JOIN2(_temp_invoker_, line)([] {                                  \
-      static_pointer_cast<TestGroup>(_thisGroup)->setPublic();                \
+      std::static_pointer_cast<TestGroup>(_thisGroup)->setPublic();           \
     })
 
 
