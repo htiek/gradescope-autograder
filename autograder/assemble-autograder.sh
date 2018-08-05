@@ -78,6 +78,7 @@ echo "Assembling ZIP archive..."
 echo
 
 TARGET_ZIP=Autograder.zip
+rm -f "$TARGET_ZIP" &&
 zip -r "$TARGET_ZIP" build-directory MANIFEST run_autograder setup.sh test-driver tests tools || exit 1
 
 echo
