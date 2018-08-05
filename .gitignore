@@ -37,3 +37,4 @@ Autograder.zip
 submission/
 results/
 assembly/
+autograder/tests/*
