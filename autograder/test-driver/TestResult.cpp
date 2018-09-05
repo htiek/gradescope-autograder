@@ -8,6 +8,7 @@ string to_string(Result r) {
   switch (r) {
   case Result::PASS:           return "test passed";
   case Result::FAIL:           return "test failed";
+  case Result::VISIBLE_FAIL:   return "test failed with message";
   case Result::EXCEPTION:      return "test triggered exception";
   case Result::CRASH:          return "test crashed";
   case Result::TIMEOUT:        return "test timed out";
@@ -50,14 +51,20 @@ size_t TestResult::numTests() const {
 
 /* * * * * SingleTestResult * * * * */
 
-SingleTestResult::SingleTestResult(Result result, Points possible, const string& name)
+SingleTestResult::SingleTestResult(Result result, const std::string& message,
+                                   Points possible, const string& name)
   : TestResult({ (result == Result::PASS) * possible, possible }, name, result == Result::PASS, 1),
-    result(result) {
+    result(result), message(message) {
 }
 
 /* We report failures by including ourself and our status if we didn't pass. */
 set<string> SingleTestResult::reportFailedTests() const {
-  if (result == Result::PASS) return { };
+  if (result == Result::PASS) {
+    return { };
+  }
+  if (result == Result::VISIBLE_FAIL) {
+    return { name() + " (" + message + ")" }; 
+  }
   return { name() + " (" + to_string(result) + ")" };
 }
 

@@ -15,6 +15,7 @@
 enum class Result {
   PASS,           // Test passed.
   FAIL,           // Test failed due to an internal primitive being invoked.
+  VISIBLE_FAIL,   // Test failed, and a message should be shown to the student
   EXCEPTION,      // Test exited due to an exception we didn't trigger.
   CRASH,          // Test actually crashed!
   TIMEOUT,        // Test failed to complete in time.
@@ -75,11 +76,13 @@ private:
 /* Test result representing a single test case. */
 class SingleTestResult: public TestResult {
 public:
-  SingleTestResult(Result result, Points possible, const std::string& name);
+  SingleTestResult(Result result, const std::string& message, // Can be empty
+                   Points possible, const std::string& name);
   std::set<std::string> reportFailedTests() const override;
   
 private:
   Result result;
+  std::string message;
 };
 
 /* Test result representing a public test group. */

@@ -21,9 +21,20 @@
  *       if (elem->hasProperty()) passTest();
  *    }
  *    failTest("No element found.");
+ *
+ * The reason passed into failTest will be logged in the autograder's stdout,
+ * but will not be passed along to the student.
+ *
+ * If, on the other hand, you would like to fail the test, and communicate
+ * the reason back to the student (assuming the test case is public), you
+ * can use the failTestVisibly function, which fails the test and communicates
+ * the reason back to the student. For example:
+ *
+ *    if (!pq.isEmpty()) failTestVisibly("Priority queue was supposed to be empty.");
  */
-#define passTest()       /* Something internal you shouldn't worry about. */
-#define failTest(reason) /* Something internal you shouldn't worry about. */
+#define passTest()               /* Something internal you shouldn't worry about. */
+#define failTest(reason)         /* Something internal you shouldn't worry about. */
+#define faillTestVisibly(reason) /* Something internal you shouldn't worry about. */
 
 /* Signals that a test has failed because of some sort of internal error with
  * the autograder. Use this only if you absolutely cannot run a particular test
@@ -103,6 +114,11 @@ public:
   TestFailedException(const std::string& message, std::size_t line, const char* filename);
 };
 
+class TestFailedVisiblyException: public std::logic_error {
+public:
+  TestFailedVisiblyException(const std::string& message, std::size_t line, const char* filename);
+};
+
 class TestSucceededException {
   // Empty
 };
@@ -123,6 +139,10 @@ private:
 #undef failTest
 #define failTest(reason) doFailTest(reason, __LINE__, __FILE__)
 [[ noreturn ]] void doFailTest(const std::string& reason, std::size_t line, const char* filename);
+
+#undef failTestVisibly
+#define failTestVisibly(reason) doFailTestVisibly(reason, __LINE__, __FILE__)
+[[ noreturn ]] void doFailTestVisibly(const std::string& reason, std::size_t line, const char* filename);
 
 #undef internalError
 #define internalError(reason) doInternalError(reason, __LINE__, __FILE__);

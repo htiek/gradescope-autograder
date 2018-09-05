@@ -21,6 +21,10 @@ void doFailTest(const string& reason, size_t line, const char* filename) {
   hardFailTest(reason, line, filename);
 }
 
+void doFailTestVisibly(const string& message, size_t line, const char* filename) {
+  throw TestFailedVisiblyException(message, line, filename);
+}
+
 void doExpect(bool condition, const char* expression, size_t line, const char* filename) {
   if (!condition) {
     hardFailTest(expression, line, filename);
@@ -30,6 +34,10 @@ void doExpect(bool condition, const char* expression, size_t line, const char* f
 /* * * * * Exception types. * * * * */
 TestFailedException::TestFailedException(const string& message, std::size_t line, const char*)
   : logic_error("Line " + to_string(line) + ": " + message) {
+
+}
+TestFailedVisiblyException::TestFailedVisiblyException(const string& message, std::size_t, const char*)
+  : logic_error(message) {
 
 }
 InternalErrorException::InternalErrorException(const string& message, std::size_t line, const char*)

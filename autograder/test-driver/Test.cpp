@@ -38,46 +38,94 @@ namespace {
   /* Helper function that, given a function, evaluates that function and returns a
    * status code based on how it went.
    */
-  Result evaluateTestCase(function<void ()> testCase) {
+  tuple<Result, string> evaluateTestCase(function<void ()> testCase) {
     try {
       testCase();
-      return Result::PASS;
+      return make_tuple(Result::PASS, "");
     } catch (const TestSucceededException &) {
-      return Result::PASS;
+      return make_tuple(Result::PASS, "");
     } catch (const TestFailedException& e) {
       cerr << "  Test failed: " << e.what() << endl;
-      return Result::FAIL;
+      return make_tuple(Result::FAIL, "");
+    } catch (const TestFailedVisiblyException& e) {
+      cerr << "  Test failed visibly: " << e.what() << endl;
+      return make_tuple(Result::VISIBLE_FAIL, e.what());
     } catch (const InternalErrorException& e) {
       cerr << "  INTERNAL TEST CASE FAILURE: " << e.what() << endl;
-      return Result::INTERNAL_ERROR;
+      return make_tuple(Result::INTERNAL_ERROR, "");
     } catch (const exception& e) {
       cerr << "  Exception: " << e.what() << endl;
-      return Result::EXCEPTION;
+      return make_tuple(Result::EXCEPTION, "");
     } catch (...) {
       cerr << "  Unknown exception generated." << endl;
-      return Result::EXCEPTION;
+      return make_tuple(Result::EXCEPTION, "");
     }
   }
  
-  /* Child process handler. [[ TODO: This! ]] */
+  /* Child process handler. */
   [[ noreturn ]] void childProcessHandler(function<void ()> testCase, uint8_t xorKey, int pipeFD) {
+    Result result;
+    string message;
+    
     /* Evaluate the test case and see what we get back. */
-    uint8_t result = static_cast<uint8_t>(evaluateTestCase(testCase)) ^ xorKey;
+    tie(result, message) = evaluateTestCase(testCase);
+  
+    /* Encode the result with our XOR key. */
+    char codedResult = static_cast<uint8_t>(result) ^ xorKey;
     
-    /* Write this back through the pipe. */
-    int status = write(pipeFD, &result, sizeof(result));
-    if (status == -1) emergencyAbort("Failed to write data into pipe?");
-    if (status ==  0) emergencyAbort("Tried to write a byte, but failed?");
+    /* Build the message to write back across the pipe. This is the status code
+     * followed by a string message.
+     */
+    string pipeMessage = codedResult + message;
     
-    /* Otherwise, we're all set! */  
+    /* Write this back across the pipe. */
+    size_t index = 0;
+    while (index != pipeMessage.size()) {
+      auto written = write(pipeFD, pipeMessage.c_str(), pipeMessage.size() - index);
+      if (written == -1) emergencyAbort("Couldn't write data across pipe.");
+        
+      index += written;
+    }
+    
+    /* Terminate normally. We're done. */
     exit(0);
+  }
+  
+  /* Given a file descriptor, reads the data from the child process from that descriptor,
+   * returning what was read back.
+   */
+  const size_t kBufferSize = 1; // TODO: Make this bigger. This is just for testing.
+  tuple<Result, string> readResult(int fd, uint8_t xorKey) {
+    /* Build a string consisting of all the bytes we read back. */
+    string data;
+    
+    while (true) {
+      char buffer[kBufferSize];
+      auto bytes = read(fd, buffer, kBufferSize);
+      
+      /* Handle errors and EOF. */
+      if (bytes == -1) emergencyAbort("Error reading from child process.");
+      if (bytes ==  0) break;
+      
+      data.append(buffer, buffer + bytes);
+    }
+    
+    /* Decompose the data into the response code (byte 0) and everything else. The data
+     * transmitted must be at least one byte for the response code. If we don't get that
+     * back, we'll assume that the child crashed.
+     */
+    if (data.size() < 1) return make_tuple(Result::CRASH, "");
+    
+    Result result  = static_cast<Result>(static_cast<uint8_t>(data[0]) ^ xorKey);
+    string message = data.substr(1);
+    return make_tuple(result, message);
   }
   
   /* Parent handler for test case. We will wait for a specified time period for the
    * child to succeed before killing it and considering things a failure.
    */
   const long kChildWaitTime = 5;
-  Result parentProcessHandler(pid_t childPID, uint8_t xorKey, int pipeFD) {
+  tuple<Result, string> parentProcessHandler(pid_t childPID, uint8_t xorKey, int pipeFD) {
     /* Use select() to wait until data arrives or some amount of time passes. */
     fd_set set;
     FD_ZERO(&set);
@@ -97,30 +145,17 @@ namespace {
      * we need to shut it down.
      */
     Result result;
+    string message;
     if (selectStatus == 0) {
       kill(childPID, SIGKILL);
       result = Result::TIMEOUT;
     }
     /* Otherwise, the child has already terminated. See what we got back. */
     else {
-      uint8_t data;
-      int readStatus = read(pipeFD, &data, sizeof(data));
-      if (readStatus == -1) {
-        emergencyAbort("read() failed.");
-      } 
-      /* We may get back 0 bytes, meaning that no data was sent back. We interpret this to
-       * be a crash, since normal program termination would have sent something.
-       */
-      else if (readStatus == 0) {
-        result = Result::CRASH;
-      }      
-      /* Or, we did get a byte back. Convert it back to a result. */
-      else {
-        result = static_cast<Result>(data ^ xorKey);
-        
-        /* If there was an internal test case error, we need to panic. */
-        if (result == Result::INTERNAL_ERROR) emergencyAbort("Internal error occurred in test.");
-      }
+      tie(result, message) = readResult(pipeFD, xorKey);
+
+      /* If there was an internal test case error, we need to panic. */
+      if (result == Result::INTERNAL_ERROR) emergencyAbort("Internal error occurred in test.");
     }
     
     /* Wait for the child to exit. */
@@ -128,7 +163,10 @@ namespace {
     if (waitpid(childPID, &childStatus, 0) == -1) emergencyAbort("Failed to wait for child.");
      
     /* If we ended the test for an abnormal reason, report some diagnostic information. */
-    if (result != Result::PASS && result != Result::FAIL && result != Result::EXCEPTION) {
+    if (result != Result::PASS &&
+        result != Result::FAIL &&
+        result != Result::VISIBLE_FAIL &&
+        result != Result::EXCEPTION) {
       if (WIFEXITED(childStatus)) {
         cout << "  Child process exited abnormally with status code " << WEXITSTATUS(childStatus) << endl;
       } else if (WIFSIGNALED(childStatus)) {
@@ -142,7 +180,7 @@ namespace {
     /* Close our end of the pipe. */
     close(pipeFD);
     
-    return result;
+    return make_tuple(result, message);
   }
   
   /* Returns a random byte. */
@@ -153,7 +191,7 @@ namespace {
   }
 
   /* Helper function to run a test and report how it goes. */
-  Result runTest(function<void ()> testCase) { 
+  tuple<Result, string> runTest(function<void ()> testCase) { 
     /* Just to guard against someone trying to guess what status code to return,
      * we'll introduce a random one-byte XOR mask.
      */
@@ -183,10 +221,13 @@ namespace {
 shared_ptr<TestResult> TestCase::run() {
   /* Run the test and see how it went. */
   cout << "Running test: " << name() << endl;
-  auto result = runTest(testCase);
+  
+  Result result;
+  string message;
+  tie(result, message) = runTest(testCase);
   cout << "  Result: " << to_string(result) << endl;
   
-  return make_shared<SingleTestResult>(result, pointsPossible(), name());
+  return make_shared<SingleTestResult>(result, message, pointsPossible(), name());
 }
 
 Points TestCase::pointsPossible() const {
