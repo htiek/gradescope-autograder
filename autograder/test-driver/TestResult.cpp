@@ -57,15 +57,31 @@ SingleTestResult::SingleTestResult(Result result, const std::string& message,
     result(result), message(message) {
 }
 
+/* Our display text is the default, plus a status message. */
+string SingleTestResult::displayText() const {
+  ostringstream builder;
+  builder << TestResult::displayText();
+  
+  /* If we didn't pass the test, explain why. */
+  if (result != Result::PASS) {
+    builder << "\\n  (" << humanReadableMessage() << ")";
+  }
+  
+  return builder.str();
+}
+
 /* We report failures by including ourself and our status if we didn't pass. */
 set<string> SingleTestResult::reportFailedTests() const {
   if (result == Result::PASS) {
     return { };
   }
-  if (result == Result::VISIBLE_FAIL) {
-    return { name() + " (" + message + ")" }; 
-  }
-  return { name() + " (" + to_string(result) + ")" };
+  return { name () + " (" + humanReadableMessage() + ")" };
+}
+
+/* Human-readable version of our status. */
+string SingleTestResult::humanReadableMessage() const {
+  if (result == Result::VISIBLE_FAIL) return message;
+  else return to_string(result);
 }
 
 /* * * * * Public Test Results * * * * */

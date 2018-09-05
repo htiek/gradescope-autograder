@@ -80,9 +80,15 @@ public:
                    Points possible, const std::string& name);
   std::set<std::string> reportFailedTests() const override;
   
+  /* Displays what happened with this test. */
+  virtual std::string displayText() const;
+  
 private:
   Result result;
   std::string message;
+  
+  /* Produces a display message containing the result of this test. */
+  std::string humanReadableMessage() const;
 };
 
 /* Test result representing a public test group. */
