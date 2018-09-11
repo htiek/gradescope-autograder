@@ -1,7 +1,7 @@
-CPP_FILES := $(wildcard *.cpp)
-OBJ_FILES := $(CPP_FILES:.cpp=.o)
+CPP_FILES    := $(wildcard *.cpp) $(wildcard Utilities/*.cpp)
+OBJ_FILES    := $(CPP_FILES:.cpp=.o)
 
-CC_FLAGS := -g -O0 -Wall -Werror -Wpedantic --std=c++17
+CC_FLAGS := -g -O0 -Wall -Werror -Wpedantic --std=c++17 -IUtilities
 LD_FLAGS := -pthread
 
 # Group ID is used to assign each set of test cases globally unique names for their namespaces,
@@ -18,7 +18,7 @@ run-tests: $(OBJ_FILES)
 	g++-6 -c $(CC_FLAGS) -DGROUP=GroupID_$(GROUP_ID) -o $@ $<
 	
 # Increment the group ID so that each set of tests gets its own group ID.
-# Thanks to https://stackoverflow.com/questions/34142638/ for this big of sorcery.
+# Thanks to https://stackoverflow.com/questions/34142638/ for this bit of sorcery.
 	$(eval GROUP_ID=$(shell echo $$(($(GROUP_ID)+1))))
 
 .PHONY: clean

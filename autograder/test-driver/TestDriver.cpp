@@ -1,5 +1,6 @@
 #include "Test.h"
 #include "TestCommon.h"
+#include "JSON.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -30,33 +31,31 @@ namespace {
     return score;
   }
   
-  /* Outputs a single test result to the JSON output. */
-  void outputSingleResult(shared_ptr<TestResult> result, ostream& out) {
-    /* Basic info; same for all tests. */
-    out << "{" << endl;
-    out << "  \"score\":      " << result->score().earned << "," << endl;
-    out << "  \"max_score\":  " << result->score().possible << "," << endl;
-    out << "  \"name\":       " << '"' << result->name() << "\"," << endl;
-    out << "  \"output\":     " << '"' << result->displayText() << "\"," << endl;
-    out << "  \"visibility\": " << "\"visible\"" << endl;
-    out << "}" << endl;
+  JSON resultToJSON(shared_ptr<TestResult> result) {
+    unordered_map<string, JSON> json;
+    
+    json.insert(make_pair("score",      JSON(int64_t(result->score().earned))));
+    json.insert(make_pair("max_score",  JSON(int64_t(result->score().possible))));
+    json.insert(make_pair("name",       JSON(result->name())));
+    json.insert(make_pair("output",     JSON(result->displayText())));
+    json.insert(make_pair("visibility", "visible"));
+    
+    return JSON(json);
   }
   
   /* Outputs a JSON report containing test results. */
   void reportResults(const vector<shared_ptr<TestResult>>& results, ostream& out) {
     Score totalEarned = scoreOf(results);
     
-    out << "{" << endl;
-    out << "  \"score\": " << totalEarned.earned << "," << endl;
-    out << "  \"tests\": [" << endl;
-    
+    vector<JSON> tests;
     for (size_t i = 0; i < results.size(); i++) {
-      outputSingleResult(results[i], out);
-      if (i + 1 != results.size()) out << "," << endl;
+      tests.push_back(resultToJSON(results[i]));
     }
     
-    out << "  ]" << endl;
-    out << "}" << endl;
+    unordered_map<string, JSON> result;
+    result.insert(make_pair("score", JSON(int64_t(totalEarned.earned))));
+    result.insert(make_pair("tests", JSON(tests)));
+    out << JSON(result);
   }
   
   /* Returns the contents of the specified file as a string. */

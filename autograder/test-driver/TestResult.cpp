@@ -64,7 +64,7 @@ string SingleTestResult::displayText() const {
   
   /* If we didn't pass the test, explain why. */
   if (result != Result::PASS) {
-    builder << "\\n  (" << humanReadableMessage() << ")";
+    builder << "\n  (" << humanReadableMessage() << ")";
   }
   
   return builder.str();
@@ -108,12 +108,12 @@ PublicTestGroupResult::PublicTestGroupResult(Score score, const std::string& nam
 /* Display text reports all the failed tests we encountered. */
 string PublicTestGroupResult::displayText() const {
   ostringstream result;
-  result << TestResult::displayText() << "\\n";
+  result << TestResult::displayText() << endl;
   if (testsPassed() != numTests()) {
-    result << "Tests that didn't pass:" << "\\n";
+    result << "Tests that didn't pass:" << endl;
     
     for (auto message: reportFailedTests()) {
-      result << "  " << message << "\\n";
+      result << "  " << message << endl;
     }
   }  
   return result.str();
