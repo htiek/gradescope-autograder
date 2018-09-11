@@ -16,15 +16,13 @@ if [ "$1" != "--no-update" ]; then
     echo "Updating..."
     echo
     
-    # Stash the zip and extract it in a temporary place.
-    UPDATE_ARCHIVE=$(mktemp)
     UPDATE_DIRECTORY=$(mktemp -d)
     
     # Base path to append to the extracted directory to get where we want.
-    FILE_PATH="gradescope-autograder-master/autograder"
+    FILE_PATH="autograder"
     
-    curl "https://codeload.github.com/htiek/gradescope-autograder/zip/master" > $UPDATE_ARCHIVE && # Download
-    unzip $UPDATE_ARCHIVE -d $UPDATE_DIRECTORY || exit 1                                           # Extract
+    # Pull the most recent version of the git files.
+    git clone --recurse-submodules "https://github.com/htiek/gradescope-autograder" "$UPDATE_DIRECTORY" || exit 1
     
     # List of files to copy over
     UPDATE_FILES="test-driver tools Instructions run_autograder setup.sh assemble-autograder.sh"
