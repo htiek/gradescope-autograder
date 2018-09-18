@@ -38,7 +38,6 @@ namespace {
     json.insert(make_pair("max_score",  JSON(int64_t(result->score().possible))));
     json.insert(make_pair("name",       JSON(result->name())));
     json.insert(make_pair("output",     JSON(result->displayText())));
-    json.insert(make_pair("visibility", "visible"));
     
     return JSON(json);
   }
