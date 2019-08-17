@@ -38,3 +38,6 @@ submission/
 results/
 assembly/
 autograder/tests/*
+
+# Error logs
+*.autograder.error.log

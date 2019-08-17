@@ -7,6 +7,11 @@
 # This is used by the autograder to report some sort of problem that occurs during setup.
 echo "ERROR: $1"
 
+# Escape the string that needs to be printed. Thanks to
+# https://stackoverflow.com/questions/10053678/escaping-characters-in-bash-for-json
+# for this one.
+CLEAN_ERROR=`python -c 'import json,sys; print(json.dumps(sys.stdin.read()))' <<< "$1"`
+
 cat - > results/results.json << EOM
 {
   "tests":
@@ -14,7 +19,7 @@ cat - > results/results.json << EOM
     {
         "name": "Autograder Error",
         "score": 0.0,
-        "output": "$1"
+        "output": $CLEAN_ERROR
     }
   ]
 }

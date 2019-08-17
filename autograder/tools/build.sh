@@ -15,11 +15,19 @@ then
     exit 1
 fi
 
-if (cd "$1"; shift; make $@); then
+# Store the directory where we're building things, then shift it out
+# so that our remaining arguments get forwarded on to make.
+BUILD_DIR=$1
+shift
+
+if (cd "$BUILD_DIR"; make $@ 2> .autograder.error.log); then
   exit 0
 else
-  # TODO: Better error reporting?
-  tools/error.sh "The code you submitted did not compile."
+  # For internal purposes, display the error that was generated.
+  ERROR_MESSAGE=`cat "$BUILD_DIR/.autograder.error.log"`
+  printf -v RENDERED_ERROR_MESSAGE "The code you submitted did not compile. Compiler error log:\n%s" "$ERROR_MESSAGE"
+
+  tools/error.sh "$RENDERED_ERROR_MESSAGE"
   exit 1
 fi
   
