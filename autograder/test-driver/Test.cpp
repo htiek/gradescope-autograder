@@ -124,7 +124,7 @@ namespace {
   /* Parent handler for test case. We will wait for a specified time period for the
    * child to succeed before killing it and considering things a failure.
    */
-  const long kChildWaitTime = 5;
+  const long kChildWaitTime = 60; // One minute
   tuple<Result, string> parentProcessHandler(pid_t childPID, uint8_t xorKey, int pipeFD) {
     /* Use select() to wait until data arrives or some amount of time passes. */
     fd_set set;
