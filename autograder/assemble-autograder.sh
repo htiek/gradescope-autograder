@@ -69,20 +69,26 @@ echo
 echo "End-to-end dry run..."
 echo
 
-tools/assemble.sh assembly && TOTAL_POINTS=$(cd assembly && ./run-tests --count-points) || exit 1
+tools/assemble.sh assembly .autograder.missing.files && TOTAL_POINTS=$(cd assembly && ./run-tests --count-points) || exit 1
 
 echo
 echo "Assembling ZIP archive..."
 echo
 
 TARGET_ZIP=Autograder.zip
+ZIP_FILE_LIST="build-directory MANIFEST run_autograder setup.sh test-driver tests tools"
 if [ -f "my-setup.sh" ]; then
-  rm -f "$TARGET_ZIP" &&
-  zip -r "$TARGET_ZIP" build-directory MANIFEST run_autograder setup.sh my-setup.sh test-driver tests tools || exit 1
-else
-  rm -f "$TARGET_ZIP" &&
-  zip -r "$TARGET_ZIP" build-directory MANIFEST run_autograder setup.sh test-driver tests tools || exit 1
+  ZIP_FILE_LIST+=" my-setup.sh"
 fi
+
+if [ -d "default-files" ]; then
+  ZIP_FILE_LIST+=" default-files"
+fi
+
+echo "Zipping these files: $ZIP_FILE_LIST"
+
+rm  -f "$TARGET_ZIP" &&
+zip -r "$TARGET_ZIP" $ZIP_FILE_LIST || exit 1
 
 echo
 echo "Autograder is ready to upload!"

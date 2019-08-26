@@ -5,10 +5,10 @@
 # expect the student to submit, and the second argument should be the target directory
 # where they need to end up.
 #
-# Usage: copy-submission.sh manifest destination
+# Usage: copy-submission.sh manifest destination missing-files-list
 
 # Ensure we have the right number of arguments.
-if [ $# -ne 2 ]
+if [ $# -ne 3 ]
 then
   echo "Internal error: Too few arguments to copy-submission.sh."
   echo "Number of arguments: $#"
@@ -17,6 +17,7 @@ fi
 
 manifestFile=$1
 destination=$2
+missingFilesList=$3
 
 # Read the manifest file.
 if [ ! -f "$manifestFile" ]; then
@@ -24,10 +25,12 @@ if [ ! -f "$manifestFile" ]; then
   exit 1
 fi
 
+echo "Copying student submission:"
+
 # Copy all files from the manifest into the destination directory
 cat "$manifestFile" | while read -r line; do
   # Skip empty lines or lines starting with #.
   ([[ "$line" =~ ^#.*$ ]] || [ -z "$line" ]) && continue
   
-  tools/copy.sh "$line" "$destination" || exit 1
+  tools/copy.sh "$line" "$destination" "$missingFilesList" || exit 1
 done

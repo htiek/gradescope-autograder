@@ -39,5 +39,5 @@ results/
 assembly/
 autograder/tests/*
 
-# Error logs
-*.autograder.error.log
+# Miscellaneous internal files
+*.autograder.*

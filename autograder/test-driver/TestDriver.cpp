@@ -31,30 +31,77 @@ namespace {
     return score;
   }
   
+  /* List of all missing files. */
+  vector<string> missingFiles(const string& missingList) {
+    ifstream input(missingList);
+    
+    /* Nothing's missing, I guess? */
+    if (!input) return {};
+    
+    vector<string> result;
+    for (string line; getline(input, line); ) {
+      result.push_back(line);
+    }
+    return result;
+  }
+  
+  /* Given a list of missing files, produces a nice, human-readable message containing
+   * those files.
+   */
+  string missingTextFor(const vector<string>& missing) {
+    if (missing.size() == 0) throw runtime_error("Asked for missing text, but no files are missing?");
+  
+    /* Nice message for just one file. */
+    if (missing.size() == 1) {
+      return "Your submission didn't include the file " + missing[0] + ".";
+    }
+  
+    ostringstream result;
+    result << "Your submission didn't include these files:" << endl;
+    
+    for (const auto& file: missing) {
+      result << "  " << file << endl;
+    }
+    
+    return result.str();
+  }
+  
+  JSON missingToJSON(const vector<string>& missing) {
+    return JSON::object({
+      { "name", "Warning: Not all required files submitted." },
+      { "output", missingTextFor(missing) }
+    });
+  }
+  
   JSON resultToJSON(shared_ptr<TestResult> result) {
-    unordered_map<string, JSON> json;
-    
-    json.insert(make_pair("score",      JSON(int64_t(result->score().earned))));
-    json.insert(make_pair("max_score",  JSON(int64_t(result->score().possible))));
-    json.insert(make_pair("name",       JSON(result->name())));
-    json.insert(make_pair("output",     JSON(result->displayText())));
-    
-    return JSON(json);
+    return JSON::object({
+      { "score",     result->score().earned   },
+      { "max_score", result->score().possible },
+      { "name",      result->name()           },
+      { "output",    result->displayText()    }
+    });
   }
   
   /* Outputs a JSON report containing test results. */
-  void reportResults(const vector<shared_ptr<TestResult>>& results, ostream& out) {
+  void reportResults(const string& missingList, const vector<shared_ptr<TestResult>>& results, ostream& out) {
     Score totalEarned = scoreOf(results);
     
     vector<JSON> tests;
+    vector<string> missing = missingFiles(missingList);
+    
+    /* Seed things with the missing files, if any weren't submitted. */
+    if (!missing.empty()) {
+      tests.push_back(missingToJSON(missing));
+    }
+    
     for (size_t i = 0; i < results.size(); i++) {
       tests.push_back(resultToJSON(results[i]));
     }
     
-    unordered_map<string, JSON> result;
-    result.insert(make_pair("score", JSON(int64_t(totalEarned.earned))));
-    result.insert(make_pair("tests", JSON(tests)));
-    out << JSON(result);
+    out << JSON::object({
+      { "score", totalEarned.earned },
+      { "tests", tests }
+    });
   }
   
   /* Returns the contents of the specified file as a string. */
@@ -77,11 +124,11 @@ namespace {
   }
   
   /* Program mode: Run all tests! */
-  void runTests(const string& outfile) {
+  void runTests(const string& outfile, const string& missingList) {
     ofstream output(outfile);
     if (!output) emergencyAbort("Could not open file " + outfile + " for writing.");
     
-    reportResults(runAllTests(), output);
+    reportResults(missingList, runAllTests(), output);
     
     /* For debugging purposes, dump the generated JSON. */
     output.close();
@@ -91,16 +138,36 @@ namespace {
 }
 
 int main(int argc, const char* argv[]) try {
-  if (argc != 2) emergencyAbort("argc != 2; instead got " + to_string(argc));
-  string argument = argv[1];
+  const char* outputFile  = nullptr;
+  const char* missingList = nullptr;
+  bool countPoints = false;
   
-  /* See what to do based on what we were provided as our argument. */
-  if (argument == "--count-points") {
+  for (int i = 1; i < argc; i++) {
+    if (string(argv[i]) == "--count-points") {
+      countPoints = true;
+    } else if (string(argv[i]) == "-o") {
+      if (outputFile != nullptr) throw invalid_argument("Multiple -o flags.");
+      if (i + 1 == argc)         throw invalid_argument("-o flag with no argument.");
+      i++;
+      outputFile = argv[i];
+    } else if (string(argv[i]) == "-m") {
+      if (missingList != nullptr) throw invalid_argument("Multiple -m flags.");
+      if (i + 1 == argc)          throw invalid_argument("-m flag with no argument.");
+      i++;
+      missingList = argv[i];
+    } else {
+      throw invalid_argument("Unknown command-line option: " + string(argv[i]));
+    }
+  }
+  
+  /* Now, see what to do. */
+  if (countPoints) {
+    if (outputFile || missingList) throw invalid_argument("--count-points cannot be used with other flags.");
     countPossiblePoints();
-  } else if (!argument.empty() && argument[0] == '-') {
-    emergencyAbort("Unknown command-line switch: " + argument);
   } else {
-    runTests(argv[1]);
+    if (!outputFile)  throw invalid_argument("No output file specified.");
+    if (!missingList) throw invalid_argument("No missing file list specified.");
+    runTests(outputFile, missingList);
   }
 } catch (const exception& e) {
   emergencyAbort(string("Unhandled exception: ") + e.what());

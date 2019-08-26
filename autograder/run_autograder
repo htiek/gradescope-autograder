@@ -1,4 +1,4 @@
 #!/bin/bash
 
-tools/assemble.sh assembly                           && # Build everything
-(cd assembly && ./run-tests ../results/results.json)    # Run the tests!
+tools/assemble.sh assembly .autograder.missing.files                                    && # Build everything
+(cd assembly && ./run-tests -o ../results/results.json -m ../.autograder.missing.files)    # Run the tests!
