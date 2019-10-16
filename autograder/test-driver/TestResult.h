@@ -111,8 +111,17 @@ public:
                          const std::set<std::shared_ptr<TestResult>>& children);
   std::set<std::string> reportFailedTests() const override;
   
+  
 private:
   std::set<std::shared_ptr<TestResult>> children;           
+};
+
+/* Test result indicating that tests weren't run because files are missing. */
+class MissingFileTestResult: public TestResult {
+public:
+  MissingFileTestResult(Points pointsPossible, const std::string& name);
+  std::set<std::string> reportFailedTests() const override;
+  std::string displayText() const override;
 };
 
 #endif

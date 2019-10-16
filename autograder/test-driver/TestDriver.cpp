@@ -11,10 +11,10 @@ using namespace std;
 
 namespace {
   /* Runs all the root tests, returning the results. */
-  vector<shared_ptr<TestResult>> runAllTests() {
+  vector<shared_ptr<TestResult>> runAllTests(const set<string>& missingFiles) {
     vector<shared_ptr<TestResult>> results;
     for (auto test: allTests()) {
-      results.push_back(test->run());
+      results.push_back(test->run(missingFiles));
     }
     return results;
   }
@@ -32,15 +32,15 @@ namespace {
   }
   
   /* List of all missing files. */
-  vector<string> missingFiles(const string& missingList) {
+  set<string> missingFiles(const string& missingList) {
     ifstream input(missingList);
     
     /* Nothing's missing, I guess? */
     if (!input) return {};
     
-    vector<string> result;
+    set<string> result;
     for (string line; getline(input, line); ) {
-      result.push_back(line);
+      result.insert(line);
     }
     return result;
   }
@@ -48,12 +48,12 @@ namespace {
   /* Given a list of missing files, produces a nice, human-readable message containing
    * those files.
    */
-  string missingTextFor(const vector<string>& missing) {
+  string missingTextFor(const set<string>& missing) {
     if (missing.size() == 0) throw runtime_error("Asked for missing text, but no files are missing?");
   
     /* Nice message for just one file. */
     if (missing.size() == 1) {
-      return "Your submission didn't include the file " + missing[0] + ".";
+      return "Your submission didn't include the file " + *missing.begin() + ".";
     }
   
     ostringstream result;
@@ -66,7 +66,7 @@ namespace {
     return result.str();
   }
   
-  JSON missingToJSON(const vector<string>& missing) {
+  JSON missingToJSON(const set<string>& missing) {
     return JSON::object({
       { "name", "Warning: Not all required files submitted." },
       { "output", missingTextFor(missing) }
@@ -87,7 +87,7 @@ namespace {
     Score totalEarned = scoreOf(results);
     
     vector<JSON> tests;
-    vector<string> missing = missingFiles(missingList);
+    set<string> missing = missingFiles(missingList);
     
     /* Seed things with the missing files, if any weren't submitted. */
     if (!missing.empty()) {
@@ -128,7 +128,7 @@ namespace {
     ofstream output(outfile);
     if (!output) emergencyAbort("Could not open file " + outfile + " for writing.");
     
-    reportResults(missingList, runAllTests(), output);
+    reportResults(missingList, runAllTests(missingFiles(missingList)), output);
     
     /* For debugging purposes, dump the generated JSON. */
     output.close();

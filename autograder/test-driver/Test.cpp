@@ -218,7 +218,7 @@ namespace {
   }
 }
 
-shared_ptr<TestResult> TestCase::run() {
+shared_ptr<TestResult> TestCase::run(const std::set<std::string> & /* unused */) {
   /* Run the test and see how it went. */
   cout << "Running test: " << name() << endl;
   
@@ -232,6 +232,10 @@ shared_ptr<TestResult> TestCase::run() {
 
 Points TestCase::pointsPossible() const {
   return numPoints;
+}
+
+size_t TestCase::numTests() const {
+  return 1;
 }
 
 /* * * * * TestGroup Implementation * * * * */
@@ -255,13 +259,19 @@ shared_ptr<Test> TestGroup::testNamed(const string& name) const {
   return tests.at(name);
 }
 
-shared_ptr<TestResult> TestGroup::run() {
+shared_ptr<TestResult> TestGroup::run(const std::set<std::string>& missingFiles) {
+  /* Edge case: if not all needed files were submitted, report an error. */
+  if (any_of(requirements.begin(), requirements.end(), [&](auto req) { return missingFiles.count(req); })) {
+    return make_shared<MissingFileTestResult>(pointsPossible(), name());
+  }
+
+  /* Otherwise, all files are submitted. Run the tests. */
   set<shared_ptr<TestResult>> children;
   Score score;
   
   /* Run each test, incorporating the information we find. */
   for (auto test: tests) {
-    auto oneResult = test.second->run();
+    auto oneResult = test.second->run(missingFiles);
     
     children.insert(oneResult);
     
@@ -287,6 +297,14 @@ shared_ptr<TestResult> TestGroup::run() {
   }
 }
 
+set<string> TestGroup::requiredFiles() const {
+  return requirements;
+}
+
+void TestGroup::addRequirement(const string& filename) {
+  requirements.insert(filename);
+}
+
 void TestGroup::setPublic(bool isPublic) {
   amIPublic = isPublic;
 }
@@ -299,6 +317,14 @@ Points TestGroup::pointsPossible() const {
   Points result = 0;
   for (const auto& test: tests) {
     result += test.second->pointsPossible();
+  }
+  return result;
+}
+
+size_t TestGroup::numTests() const {
+  size_t result = 0;
+  for (auto test: tests) {
+    result += test.second->numTests(); 
   }
   return result;
 }

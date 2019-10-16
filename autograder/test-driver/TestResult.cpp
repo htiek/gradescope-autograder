@@ -75,7 +75,7 @@ set<string> SingleTestResult::reportFailedTests() const {
   if (result == Result::PASS) {
     return { };
   }
-  return { name () + " (" + humanReadableMessage() + ")" };
+  return { name() + " (" + humanReadableMessage() + ")" };
 }
 
 /* Human-readable version of our status. */
@@ -145,4 +145,21 @@ PrivateTestGroupResult::PrivateTestGroupResult(Score score, const std::string& n
 set<string> PrivateTestGroupResult::reportFailedTests() const {
   if (testsPassed() == numTests()) return { };
   return { "(at least one private test case)" };
+}
+
+
+
+/* * * * * Missing File Test Results * * * * */
+MissingFileTestResult::MissingFileTestResult(Points pointsPossible, const std::string& name) 
+  : TestResult({ 0, pointsPossible }, name, 0, 0) {
+
+}
+
+set<string> MissingFileTestResult::reportFailedTests() const {
+  return { "(tests not run; not all needed files submitted)" };
+}
+
+/* Display text reports all the failed tests we encountered. */
+string MissingFileTestResult::displayText() const {
+  return "Tests not run; not all necessary files were submitted.";
 }

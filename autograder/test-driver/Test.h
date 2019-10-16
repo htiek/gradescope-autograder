@@ -3,6 +3,7 @@
 
 #include "TestResult.h"
 #include <map>
+#include <set>
 #include <string>
 #include <memory>
 #include <functional>
@@ -16,10 +17,13 @@ public:
   virtual ~Test() = default;
   
   /* Runs the tests, returning a collection of test results. */
-  virtual std::shared_ptr<TestResult> run() = 0;
+  virtual std::shared_ptr<TestResult> run(const std::set<std::string>& missingFiles) = 0;
   
   /* Returns how many points this test is worth. */
   virtual Points pointsPossible() const = 0;
+  
+  /* How many tests are grouped here. */
+  virtual std::size_t numTests() const = 0;
   
   /* Returns the name of this test. */
   std::string name() const;
@@ -39,10 +43,13 @@ public:
            Points numPoints = 1);
 
   /* Runs the individual test, returning how it went. */
-  std::shared_ptr<TestResult> run() override;
+  std::shared_ptr<TestResult> run(const std::set<std::string> &) override;
   
   /* Returns the underlying number of points. */
   Points pointsPossible() const override;
+  
+  /* There's just one test. */
+  std::size_t numTests() const override;
   
 private:
   std::function<void ()> testCase;
@@ -61,7 +68,7 @@ public:
   std::shared_ptr<Test> testNamed(const std::string& name) const;
   
   /* Runs all the tests in the group. */
-  std::shared_ptr<TestResult> run() override;
+  std::shared_ptr<TestResult> run(const std::set<std::string>& missingFiles) override;
   
   /* Returns whether this group of tests is public. */
   bool isPublic() const;
@@ -69,11 +76,21 @@ public:
   /* Changes the visibility of this test case. */
   void setPublic(bool isPublic = true);
   
+  /* Returns all the files required to be submitted. */
+  std::set<std::string> requiredFiles() const;
+  
+  /* Adds a new file to the list of requirements. */
+  void addRequirement(const std::string& filename);
+  
   /* Returns the underlying number of points, or calculates recursively as needed. */
   Points pointsPossible() const override;
   
+  /* We can have lots of tests! */
+  std::size_t numTests() const override;
+  
 private:
   std::map<std::string, std::shared_ptr<Test>> tests;
+  std::set<std::string> requirements;
   Points numPoints;
   bool amIPublic = false;
   

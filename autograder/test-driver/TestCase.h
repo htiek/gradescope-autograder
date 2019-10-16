@@ -91,7 +91,13 @@
  */
 #define MAKE_TESTS_PUBLIC() /* Something internal you shouldn't worry about. */
 
-
+/* Requires that the named file be submitted in order for the given test group to run.
+ * If that file isn't submitted, the tests in the section won't be run and the student
+ * will see an error message indicating this.
+ *
+ * You can require multiple files to be submitted in order for a test group to run.
+ */
+#define REQUIRE_SUBMITTED_FILE(filename) /* Something internal you shouldn't worry about. */
 
 
 
@@ -240,7 +246,7 @@ namespace Parent = Root;
 #define JOIN2(first, second) first##second
 #define JOIN3(first, second, third) first##second##third
 
-/* MACRO: MAKE_TESTS_PUBLIC
+/* Macro: MAKE_TESTS_PUBLIC
  *
  * What it actually does: Makes the current group public. We rely on scope resolution
  * to figure out which group _thisGroup refers to.
@@ -249,8 +255,21 @@ namespace Parent = Root;
 #define MAKE_TESTS_PUBLIC() DO_MAKE_TESTS_PUBLIC(__LINE__)
 
 #define DO_MAKE_TESTS_PUBLIC(line)                                            \
-    Invoker JOIN2(_temp_invoker_, line)([] {                                  \
+    Invoker JOIN2(_temp_public_invoker_, line)([] {                           \
       std::static_pointer_cast<TestGroup>(_thisGroup)->setPublic();           \
+    })
+    
+/* Macro: REQUIRE_SUBMITTED_FILE
+ *
+ * What it actually does: Uses scope resolution to select the right test group,
+ * then add the given requirement.
+ */
+#undef  REQUIRE_SUBMITTED_FILE
+#define REQUIRE_SUBMITTED_FILE(filename) DO_REQUIRE_SUBMITTED_FILE(filename, __LINE__)
+
+#define DO_REQUIRE_SUBMITTED_FILE(filename, line)                                \
+    Invoker JOIN2(_temp_requirement_invoker_, line)([] {                         \
+      std::static_pointer_cast<TestGroup>(_thisGroup)->addRequirement(filename); \
     })
 
 
