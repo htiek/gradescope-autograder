@@ -24,6 +24,9 @@ if [ "$1" != "--no-update" ]; then
     # Pull the most recent version of the git files.
     git clone --recurse-submodules "https://github.com/htiek/gradescope-autograder" "$UPDATE_DIRECTORY" || exit 1
     
+    # Remove all .git files from this directory; they point in the wrong place.
+    find "$UPDATE_DIRECTORY" -name *.git* -prune -exec rm -rf "{}" ";" || exit 1
+
     # List of files to copy over
     UPDATE_FILES="test-driver tools Instructions run_autograder setup.sh assemble-autograder.sh"
     
