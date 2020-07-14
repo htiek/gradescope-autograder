@@ -20,7 +20,7 @@ fi
 BUILD_DIR=$1
 shift
 
-if (cd "$BUILD_DIR"; make $@ 2> .autograder.error.log); then
+if (cd "$BUILD_DIR"; make -j $@ 2> .autograder.error.log); then
   exit 0
 else
   # For internal purposes, display the error that was generated.
