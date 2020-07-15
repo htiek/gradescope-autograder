@@ -4,22 +4,17 @@ OBJ_FILES    := $(CPP_FILES:.cpp=.o)
 CC_FLAGS := -g -O0 -Wall -Werror -Wpedantic --std=c++17 -IUtilities
 LD_FLAGS := 
 
-# Group ID is used to assign each set of test cases globally unique names for their namespaces,
-# ensuring that we don't get collisions.
-GROUP_ID = 0
-
 all: run-tests
 
 run-tests: $(OBJ_FILES)
 	g++ $(LD_FLAGS) -o $@ $^
 
 %.o: %.cpp
-# Build with GROUP subbed out for the current group ID.
-	g++ -c $(CC_FLAGS) -DGROUP=GroupID_$(GROUP_ID) -o $@ $<
-	
-# Increment the group ID so that each set of tests gets its own group ID.
-# Thanks to https://stackoverflow.com/questions/34142638/ for this bit of sorcery.
-	$(eval GROUP_ID=$(shell echo $$(($(GROUP_ID)+1))))
+# Build with GROUP subbed out for an ID derived from the contents of the testing file.
+# This may cause problems if there are two literally identical test files, but we
+# don't anticipate this will happen.
+	g++ -c $(CC_FLAGS) -DGROUP=GroupID_$(shell md5sum $< | awk '{print $$1}') -o $@ $<
+
 
 .PHONY: clean
 
