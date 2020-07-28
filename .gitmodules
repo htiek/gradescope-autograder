@@ -1,3 +1,0 @@
-[submodule "autograder/test-driver/Utilities"]
-	path = autograder/test-driver/Utilities
-	url = https://github.com/htiek/MiniData
