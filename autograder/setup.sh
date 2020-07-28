@@ -8,3 +8,8 @@ mv autograder/source/* autograder/
 if [ -f "autograder/my-setup.sh" ]; then
   autograder/my-setup.sh || exit 1
 fi
+
+# Build everything in the build-directory once as a clean build so that we
+# don't have to recompile things later.
+cd autograder
+tools/build.sh "build-directory"

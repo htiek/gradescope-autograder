@@ -3,7 +3,7 @@
 # Builds the test harness into the specified directory. If that directory exists, it will
 # be overwritten and replaced with the result
 #
-#   Usage: assemble.sh where-to
+#   Usage: assemble.sh where-to missing-file-name
 
 # Ensure we have the right number of arguments.
 if [ $# -ne 2 ]

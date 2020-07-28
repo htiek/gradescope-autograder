@@ -1,4 +1,4 @@
-CPP_FILES    := $(wildcard *.cpp) $(wildcard Utilities/*.cpp)
+CPP_FILES    := $(wildcard *.cpp)
 OBJ_FILES    := $(CPP_FILES:.cpp=.o)
 
 CC_FLAGS := -g -O0 -Wall -Werror -Wpedantic --std=c++17 -IUtilities

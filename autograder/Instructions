@@ -26,7 +26,10 @@ Here's what you need to do to configure everything:
    making those files fail every test case.
 
 3. SET UP THE BUILD DIRECTORY. You should include in build-directory/ enough files to make it
-   possible to build all of the object files for the student code.
+   possible to build all of the object files for the student code. This directory should build
+   clean as-is. It will be built twice by the system: once during setup (to speed up build times
+   when students submit) and once more after files are submitted (so that student code gets
+   linked in properly).
    
    There's a default Makefile in the build directory that you're welcome to use. It just compiles
    all the .cpp files in the directory to object files.
