@@ -11,39 +11,39 @@
 /* Checks whether the given condition is true. If so, nothing happens. If the condition
  * is false, then the test fails. For example:
  *
- *     expect(vec.isEmpty());
+ *     EXPECT(vec.isEmpty());
  */
-#define expect(condition) /* Something internal you shouldn't worry about. */
+#define EXPECT(condition) /* Something internal you shouldn't worry about. */
 
 /* Immediately signals that a test has ended with the stated result.
  *
  *    for (auto elem: list) {
- *       if (elem->hasProperty()) passTest();
+ *       if (elem->hasProperty()) PASS_TEST();
  *    }
- *    failTest("No element found.");
+ *    FAIL_TEST("No element found.");
  *
- * The reason passed into failTest will be logged in the autograder's stdout,
+ * The reason passed into FAIL_TEST will be logged in the autograder's stdout,
  * but will not be passed along to the student.
  *
  * If, on the other hand, you would like to fail the test, and communicate
  * the reason back to the student (assuming the test case is public), you
- * can use the failTestVisibly function, which fails the test and communicates
+ * can use the FAIL_TEST_VISIBLY function, which fails the test and communicates
  * the reason back to the student. For example:
  *
- *    if (!pq.isEmpty()) failTestVisibly("Priority queue was supposed to be empty.");
+ *    if (!pq.isEmpty()) FAIL_TEST_VISIBLY("Priority queue was supposed to be empty.");
  */
-#define passTest()               /* Something internal you shouldn't worry about. */
-#define failTest(reason)         /* Something internal you shouldn't worry about. */
-#define faillTestVisibly(reason) /* Something internal you shouldn't worry about. */
+#define PASS_TEST()               /* Something internal you shouldn't worry about. */
+#define FAIL_TEST(reason)         /* Something internal you shouldn't worry about. */
+#define FAIL_TEST_VISIBLY(reason) /* Something internal you shouldn't worry about. */
 
 /* Signals that a test has failed because of some sort of internal error with
  * the autograder. Use this only if you absolutely cannot run a particular test
  * with the likely culprit being a misconfiguration on our end. For example:
  *
  *    ifstream input("SourceFile.txt");
- *    if (!input) internalError("Cannot open SourceFile.txt.");
+ *    if (!input) INTERNAL_ERROR("Cannot open SourceFile.txt.");
  */
-#define internalError(reason) /* Something internal you shouldn't worry about. */
+#define INTERNAL_ERROR(reason) /* Something internal you shouldn't worry about. */
 
 /* Defines a new test case. Each test case you define should be written as
  *
@@ -138,24 +138,24 @@ private:
 };
 
 /* Implementation of testing primitive macros. */
-#undef passTest
-#define passTest() doPassTest()
+#undef PASS_TEST
+#define PASS_TEST() doPassTest()
 [[ noreturn ]] void doPassTest();
 
-#undef failTest
-#define failTest(reason) doFailTest(reason, __LINE__, __FILE__)
+#undef FAIL_TEST
+#define FAIL_TEST(reason) doFailTest(reason, __LINE__, __FILE__)
 [[ noreturn ]] void doFailTest(const std::string& reason, std::size_t line, const char* filename);
 
-#undef failTestVisibly
-#define failTestVisibly(reason) doFailTestVisibly(reason, __LINE__, __FILE__)
+#undef FAIL_TEST_VISIBLY
+#define FAIL_TEST_VISIBLY(reason) doFailTestVisibly(reason, __LINE__, __FILE__)
 [[ noreturn ]] void doFailTestVisibly(const std::string& reason, std::size_t line, const char* filename);
 
-#undef internalError
-#define internalError(reason) doInternalError(reason, __LINE__, __FILE__);
+#undef INTERNAL_ERROR
+#define INTERNAL_ERROR(reason) doInternalError(reason, __LINE__, __FILE__);
 [[ noreturn ]] void doInternalError(const std::string& reason, std::size_t line, const char* filename);
 
-#undef expect
-#define expect(condition) doExpect(condition, "expect(" #condition "): condition was false.", __LINE__, __FILE__)
+#undef EXPECT
+#define EXPECT(condition) doExpect(condition, "expect(" #condition "): condition was false.", __LINE__, __FILE__)
 void doExpect(bool condition, const char* expression, std::size_t line, const char* filename);
 
 /* Bogus return type used for initialization of test cases. */
