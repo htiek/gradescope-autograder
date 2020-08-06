@@ -1,7 +1,7 @@
-CPP_FILES    := $(wildcard *.cpp)
-OBJ_FILES    := $(CPP_FILES:.cpp=.o)
+CPP_FILES := $(shell find . -name '*.cpp')
+OBJ_FILES := $(CPP_FILES:.cpp=.o)
 
-CC_FLAGS := -g -O0 -Wall -Werror -Wpedantic --std=c++17 -IUtilities
+CC_FLAGS := -O3 -Wall -Werror -Wpedantic --std=c++17 -IUtilities
 LD_FLAGS := 
 
 all: run-tests
@@ -19,4 +19,4 @@ run-tests: $(OBJ_FILES)
 .PHONY: clean
 
 clean:
-	rm -f *.o run-tests *~
+	find . -name '*.o' -delete
