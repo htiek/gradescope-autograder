@@ -37,8 +37,8 @@ if [ "$1" != "--no-update" ]; then
     for file in $UPDATE_FILES; do
       # Move the old files to a temporary directory. This is important, since this script is currently
       # running and we don't want the update to break things!
-      mv $file $OLD_FILES_DIRECTORY/               || exit 1
-      cp -r $UPDATE_DIRECTORY/$FILE_PATH/$file .   || exit 1
+      mv $file $OLD_FILES_DIRECTORY/                   || exit 1
+      cp -r $UPDATE_DIRECTORY/$FILE_PATH/$file $file   || exit 1
     done
     
     echo "Update complete!"
