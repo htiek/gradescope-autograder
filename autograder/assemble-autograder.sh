@@ -28,7 +28,7 @@ if [ "$1" != "--no-update" ]; then
     find "$UPDATE_DIRECTORY" -name *.git* -prune -exec rm -rf "{}" ";" || exit 1
 
     # List of files to copy over
-    UPDATE_FILES="test-driver tools Instructions run_autograder setup.sh assemble-autograder.sh build-directory/Makefile"
+    UPDATE_FILES="test-driver tools Instructions run_autograder setup.sh assemble-autograder.sh"
     
     # Directory to stash all the old versions of these files.
     OLD_FILES_DIRECTORY=$(mktemp -d)
