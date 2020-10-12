@@ -41,6 +41,11 @@ if [ "$1" != "--no-update" ]; then
       cp -r $UPDATE_DIRECTORY/$FILE_PATH/$file $file   || exit 1
     done
     
+    # If there is no output-config.json file, create one.
+    if [[ ! -e output-config.json ]]; then
+        cat > output-config.json <<< {}
+    fi
+    
     echo "Update complete!"
     echo
     

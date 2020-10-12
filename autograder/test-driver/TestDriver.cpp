@@ -83,7 +83,10 @@ namespace {
   }
   
   /* Outputs a JSON report containing test results. */
-  void reportResults(const string& missingList, const vector<shared_ptr<TestResult>>& results, ostream& out) {
+  void reportResults(const string& missingList,
+                     const vector<shared_ptr<TestResult>>& results,
+                     ostream& out,
+                     JSON config) {
     Score totalEarned = scoreOf(results);
     
     vector<JSON> tests;
@@ -97,11 +100,18 @@ namespace {
     for (size_t i = 0; i < results.size(); i++) {
       tests.push_back(resultToJSON(results[i]));
     }
+
+    /* Build our resulting JSON object. Begin by cloning the config settings. */    
+    map<string, JSON> result;
+    for (auto key: config) {
+        result.insert(make_pair(key.asString(), config[key]));
+    }
     
-    out << JSON::object({
-      { "score", totalEarned.earned },
-      { "tests", tests }
-    });
+    /* Add our fields. */
+    result.insert(make_pair("score", totalEarned.earned));
+    result.insert(make_pair("tests", tests));
+
+    out << JSON(result);
   }
   
   /* Returns the contents of the specified file as a string. */
@@ -124,11 +134,11 @@ namespace {
   }
   
   /* Program mode: Run all tests! */
-  void runTests(const string& outfile, const string& missingList) {
+  void runTests(const string& outfile, const string& missingList, JSON config) {
     ofstream output(outfile);
     if (!output) emergencyAbort("Could not open file " + outfile + " for writing.");
     
-    reportResults(missingList, runAllTests(missingFiles(missingList)), output);
+    reportResults(missingList, runAllTests(missingFiles(missingList)), output, config);
     
     /* For debugging purposes, dump the generated JSON. */
     output.close();
@@ -140,6 +150,7 @@ namespace {
 int main(int argc, const char* argv[]) try {
   const char* outputFile  = nullptr;
   const char* missingList = nullptr;
+  const char* configFile  = nullptr;
   bool countPoints = false;
   
   for (int i = 1; i < argc; i++) {
@@ -155,6 +166,11 @@ int main(int argc, const char* argv[]) try {
       if (i + 1 == argc)          throw invalid_argument("-m flag with no argument.");
       i++;
       missingList = argv[i];
+    } else if (string(argv[i]) == "-j") {
+      if (configFile != nullptr)  throw invalid_argument("Multiple -j flags.");
+      if (i + 1 == argc)          throw invalid_argument("-j flag with no argument.");
+      i++;
+      configFile = argv[i];
     } else {
       throw invalid_argument("Unknown command-line option: " + string(argv[i]));
     }
@@ -167,7 +183,17 @@ int main(int argc, const char* argv[]) try {
   } else {
     if (!outputFile)  throw invalid_argument("No output file specified.");
     if (!missingList) throw invalid_argument("No missing file list specified.");
-    runTests(outputFile, missingList);
+    
+    /* Load JSON data if we can, falling back to an empty config if nothing was specified. */
+    JSON config = JSON::object();
+    if (configFile) {
+        ifstream input(configFile);
+        if (!input) throw invalid_argument("Cannot open configuration file.");
+        
+        config = JSON::parse(input);
+    }
+    
+    runTests(outputFile, missingList, config);
   }
 } catch (const exception& e) {
   emergencyAbort(string("Unhandled exception: ") + e.what());
