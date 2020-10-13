@@ -69,7 +69,8 @@ namespace {
   JSON missingToJSON(const set<string>& missing) {
     return JSON::object({
       { "name", "Warning: Not all required files submitted." },
-      { "output", missingTextFor(missing) }
+      { "output", missingTextFor(missing) },
+      { "visibility", "visible" }, // Always visible, even if tests are hidden.
     });
   }
   
