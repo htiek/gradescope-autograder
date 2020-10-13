@@ -84,7 +84,7 @@ echo "Assembling ZIP archive..."
 echo
 
 TARGET_ZIP=Autograder.zip
-ZIP_FILE_LIST="build-directory MANIFEST run_autograder setup.sh test-driver tests tools"
+ZIP_FILE_LIST="build-directory MANIFEST run_autograder setup.sh test-driver tests tools output-config.json"
 if [ -f "my-setup.sh" ]; then
   ZIP_FILE_LIST+=" my-setup.sh"
 fi
