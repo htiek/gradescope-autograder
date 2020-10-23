@@ -10,7 +10,7 @@ echo "ERROR: $1"
 # Escape the string that needs to be printed. Thanks to
 # https://stackoverflow.com/questions/10053678/escaping-characters-in-bash-for-json
 # for this one.
-CLEAN_ERROR=`python -c 'import json,sys; print(json.dumps(sys.stdin.read()))' <<< "$1"`
+CLEAN_ERROR=`python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' <<< "$1"`
 
 cat - > results/results.json << EOM
 {
