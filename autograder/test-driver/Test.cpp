@@ -13,6 +13,7 @@
 #include <cstring>
 #include <atomic>
 #include <thread>
+#include <algorithm>
 using namespace std;
 
 /* * * * * Test Implementation * * * * */
